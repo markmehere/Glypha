@@ -4,6 +4,9 @@
 #include "GLUtils.h"
 #include <cstdio>
 #include <cstring>
+#ifdef EMSCRIPTEN
+#include <SDL2/SDL.h>
+#endif
 
 #define kIdle						-1	// enemy & player mode
 #define kFlying						0	// enemy & player mode
@@ -59,15 +62,20 @@
 
 #define kUpdateFreq (1.0/30.0)
 
+#ifdef EMSCRIPTEN
+extern bool audioIsMuted;
+bool prefLoaded = false;
+#endif
+
 GL::Game::Game(Callback callback, HighScoreNameCallback highScoreCallback, void *context)
-    : callback_(callback)
+    : playing(false)
+    , callback_(callback)
     , highScoreCallback_(highScoreCallback)
     , callbackContext_(context)
     , renderer_(new Renderer())
     , now(utils.now())
     , lastTime(now)
     , accumulator(0)
-    , playing(false)
     , pausing(false)
     , evenFrame(true)
     , flapKeyDown(false)
@@ -202,8 +210,10 @@ GL::Game::Game(Callback callback, HighScoreNameCallback highScoreCallback, void 
     
     font11Img.setAllowColorBlending(true);
     memset(fps_buf, 0, sizeof(fps_buf));
-    
+
+#ifndef EMSCRIPTEN
     readInPrefs();
+#endif
 }
 
 GL::Game::~Game()
@@ -306,6 +316,9 @@ void GL::Game::drawFrame() const
         drawScoreNumbers();
         drawLevelNumbers();
     }
+#ifdef EMSCRIPTEN
+    drawMenu(r);
+#endif
     drawHelp();
     drawHighScores();
     drawObelisks();
@@ -434,6 +447,13 @@ void GL::Game::drawLightning() const
 
 void GL::Game::newGame()
 {
+#ifdef EMSCRIPTEN
+    if (!prefLoaded) {
+        readInPrefs();
+        prefLoaded = true;
+    }
+#endif
+
     countDownTimer = 0;
 	numLedges = 3;
 	levelOn = 0;
@@ -471,15 +491,29 @@ bool GL::Game::paused() const
 void GL::Game::endGame()
 {
     playing = false;
-    sounds.play(kMusicSound);
+    #ifndef EMSCRIPTEN
     checkHighScore();
+    sounds.play(kMusicSound);
+    #else
+    if (!checkHighScore()) {
+        sounds.play(kMusicSound);
+    }
+    #endif
     cursor.show();
     if (callback_) {
         callback_(EventEnded, callbackContext_);
     }
 }
 
-void GL::Game::checkHighScore()
+void GL::Game::conclude()
+{
+    sounds.play(kMusicSound);
+    resetWall();
+    lastTime = utils.now();
+    showHighScores();
+}
+
+bool GL::Game::checkHighScore()
 {
     cursor.show();
     if (score_ > thePrefs.highScores[9].score) {
@@ -499,6 +533,7 @@ void GL::Game::checkHighScore()
             highScoreCallback_(thePrefs.highName, i + 1, callbackContext_);
         }
     }
+    return score_ > thePrefs.highScores[9].score;
 }
 
 void GL::Game::processHighScoreName(const char *name, int place)
@@ -526,6 +561,12 @@ void GL::Game::showHelp()
 
 void GL::Game::showHighScores()
 {
+#ifdef EMSCRIPTEN
+    if (!prefLoaded) {
+        readInPrefs();
+        prefLoaded = true;
+    }
+#endif
     if (!playing && wallMode != kWallModeHighScores) {
         if (wallState == kWallClosed || wallState == kWallOpen) {
             openHighScores();
@@ -2761,7 +2802,7 @@ void GL::Game::drawHighScores() const
         r->setFillColor(0, 0, 0);
         r->fillRect(scoreDest);
         
-        r->setFillColor(2/255.0f, 29/255.0f, 143/255.0f);
+        r->setFillColor(32/255.0f, 69/255.0f, 233/255.0f);
         font11.drawText(highScoresTitle, scoreSrc.left + ((scoreSrc.width() - highScoresTitleWidth) / 2), scoreSrc.top + 10, font11Img);
         
         char scoreStr[100];
@@ -2827,14 +2868,22 @@ void GL::Game::showAbout()
     }
 }
 
+void GL::Game::hideAll(bool value)
+{
+    if (!playing && value) {
+        closeWall();
+        aboutVisible = false;
+    }
+}
+
 void GL::Game::drawAbout(Renderer *r) const
 {
-    int x = (r->bounds().width() - aboutImg.width()) / 2;
-    int y = (r->bounds().height() - aboutImg.height()) / 2;
+    int x = (GL_GAME_WIDTH - aboutImg.width()) / 2;
+    int y = (GL_GAME_HEIGHT - aboutImg.height()) / 2;
     
     aboutImg.draw(x, y);
 
-    r->setFillColor(102/255.0f, 51/255.0f, 102/255.0f);
+    r->setFillColor(122/255.0f, 71/255.0f, 122/255.0f);
     
     const int lineHeight = font11.lineHeight();
     x += 8;
@@ -2854,11 +2903,11 @@ void GL::Game::drawAbout(Renderer *r) const
 
     y += lineHeight * 2;
     
-    font11.drawText("Mac OS X port:", x, y, font11Img);
+    font11.drawText("Mac OS X and web port:", x, y, font11Img);
     y += lineHeight;
     font11.drawText("Mark Pazolli", x, y, font11Img);
     y += lineHeight;
-    font11.drawText("2001", x, y, font11Img);
+    font11.drawText("2001 and 2023", x, y, font11Img);
 
     y += lineHeight * 2;
     
@@ -2867,4 +2916,37 @@ void GL::Game::drawAbout(Renderer *r) const
     font11.drawText("Kevin Wojniak", x, y, font11Img);
     y += lineHeight;
     font11.drawText("2018", x, y, font11Img);
+}
+
+void GL::Game::drawMenu(Renderer *r) const
+{
+    if (!playing) {
+        r->setFillColor(0.56f, 0.36f, 0.0f);
+        font11.drawText("   About (A)   ", 20, 3, font11Img);
+        font11.drawText("  New Game (N) ", 120, 3, font11Img);
+        font11.drawText("    Help (H)   ", 220, 3, font11Img);
+        font11.drawText("High Scores (S)", 320, 3, font11Img);
+        #ifdef EMSCRIPTEN
+        if (audioIsMuted) {
+            font11.drawText(" Play Sound (M)", 430, 3, font11Img);
+        }
+        else {
+            font11.drawText(" Mute Sound (M)", 430, 3, font11Img);
+        }
+        #endif
+    }
+    else if (pausing) {
+        r->setFillColor(0.56f, 0.36f, 0.0f);
+        font11.drawText("   Quit to Menu (Q)   ", 20, 3, font11Img);
+        font11.drawText("   *** PAUSED *** (Esc/P)   ", 220, 3, font11Img);
+        #ifdef EMSCRIPTEN
+        if (audioIsMuted) {
+            font11.drawText(" Play Sound (M)", 430, 3, font11Img);
+        }
+        else {
+            font11.drawText(" Mute Sound (M)", 430, 3, font11Img);
+        }
+        #endif
+
+    }
 }

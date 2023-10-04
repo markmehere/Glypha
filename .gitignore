@@ -1,2 +1,8 @@
 .DS_Store
 build*
+webbuild/CMakeFiles/*
+webbuild/cmake_*
+webbuild/CMakeCache.txt
+.vscode
+webbuild/glypha_iii*
+webbuild/Makefile

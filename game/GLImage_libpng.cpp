@@ -34,8 +34,10 @@ void GL::Image::load(const unsigned char *buf, size_t bufSize)
             height_ = png_get_image_height(png_ptr, info_ptr);
             
             png_set_expand(png_ptr);
+            #ifndef EMSCRIPTEN
             png_set_bgr(png_ptr); // for BGR for OpenGL texture
- 
+            #endif
+
             png_read_update_info(png_ptr, info_ptr);
             png_byte color_type = png_get_color_type(png_ptr, info_ptr);
             

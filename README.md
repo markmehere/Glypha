@@ -27,6 +27,12 @@ Ubuntu dependencies:
 1. Qt
 2. `sudo apt install libgl1-mesa-dev`
 
+Web:
+
+1. Install emscripten https://emscripten.org/
+2. `emcc -v` to verify install
+3. `make webs` (requires `python3` to serve)
+
 ### TODO
 
 * Use Metal on macOS? SpriteKit?
@@ -45,3 +51,6 @@ Ubuntu dependencies:
 
 - Icon by etherbrian  
 <http://etherbrian.org>
+
+- Glypha Vintage (not known about at time of this port but also by John):
+<https://store.steampowered.com/app/2318420/Glypha_Vintage/>

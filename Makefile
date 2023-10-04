@@ -30,3 +30,26 @@ qt_xcode:
 .PHONY: clean
 clean:
 	rm -rf build*
+	rm -rf webbuild/CMakeFiles
+	rm webbuild/CMakeCache.txt
+	rm webbuild/Makefile
+	rm webbuild/cmake_install.cmake
+	rm webbuild/glypha_iii*
+	rm -rf webbuild/gl4es/build
+
+webbuild/gl4es/include/GL/gl.h:
+	git clone https://github.com/ptitSeb/gl4es.git webbuild/gl4es
+
+webbuild/gl4es/lib/libGL.a: webbuild/gl4es/include/GL/gl.h
+	mkdir -p webbuild/gl4es/build
+	cd webbuild/gl4es/build && emcmake cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNOX11=ON -DNOEGL=ON -DSTATICLIB=ON
+	cd webbuild/gl4es/build && make
+
+.PHONY: web
+web: game webbuild/gl4es/lib/libGL.a
+	cd webbuild && emcmake cmake -DCMAKE_BUILD_TYPE=Release .
+	cd webbuild && cmake --build . --config Release
+
+.PHONY: webs
+webs: web
+	cd webbuild && python3 -m http.server

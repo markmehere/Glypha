@@ -1,6 +1,8 @@
 #ifndef GLUTILS_H
 #define GLUTILS_H
 
+#include "GLGlobals.h"
+
 #ifdef __APPLE__
 #include <mach/mach_time.h>
 #elif defined(_WIN32)

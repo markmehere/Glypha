@@ -16,7 +16,11 @@ bool GL::Image::isLoaded() const
 
 void GL::Image::loadTextureData_(const void *texData, bool hasAlpha)
 {
+    #ifdef EMSCRIPTEN
+    loadTextureData_(texData, hasAlpha ? GL_RGBA : GL_RGB, hasAlpha);
+    #else
     loadTextureData_(texData, hasAlpha ? GL_BGRA_EXT : GL_BGR_EXT, hasAlpha);
+    #endif
 }
 
 void GL::Image::loadTextureData_(const void *texData, GLenum format, bool hasAlpha)
@@ -32,7 +36,7 @@ void GL::Image::loadTextureData_(const void *texData, GLenum format, bool hasAlp
 	glBindTexture(GL_TEXTURE_2D, texture_);
 	
 	// set texture data
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width_, height_, 0, format, GL_UNSIGNED_BYTE, texData);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, format, GL_UNSIGNED_BYTE, texData);
 }
 
 void GL::Image::draw(const GL::Point *dest, size_t numDest, const GL::Point *src, size_t numSrc) const
@@ -45,7 +49,7 @@ void GL::Image::draw(const GL::Point *dest, size_t numDest, const GL::Point *src
 	// set this texture as current
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texture_);
-	
+
     if (alpha_) {
         // enable alpha blending
         glEnable(GL_BLEND);
@@ -57,7 +61,7 @@ void GL::Image::draw(const GL::Point *dest, size_t numDest, const GL::Point *src
 
     // GL_NEAREST affects drawing the texture at different sizes
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	
+
 	// draw the texture
 	glBegin(numDest == 4 ? GL_QUADS : GL_POLYGON);
     for (size_t i = 0; i < numDest; ++i) {

@@ -6,6 +6,12 @@
 #elif defined(_WIN32)
 #include <windows.h>
 #endif
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <SDL2/SDL.h>
+#endif
 
 bool GL::Prefs::load(PrefsInfo& thePrefs)
 {
@@ -37,6 +43,18 @@ bool GL::Prefs::load(PrefsInfo& thePrefs)
         return false;
     }
     return RegGetValueW(HKEY_CURRENT_USER, subkey, value, RRF_RT_REG_BINARY, nullptr, (PVOID)&thePrefs, &size) == ERROR_SUCCESS;
+#elif defined(EMSCRIPTEN)
+    FILE *fptr;
+    fptr = fopen("/glypha/highscores.bin", "rb");
+    if (fptr) {
+        fread(&thePrefs, sizeof(PrefsInfo), 1, fptr);
+        fclose(fptr);
+        return true;
+    }
+    else {
+        SDL_Log("No high scores found!");
+    }
+    return false;
 #else
     (void)thePrefs;
     return false;
@@ -65,6 +83,40 @@ void GL::Prefs::save(const PrefsInfo& thePrefs)
         RegSetValueExW(key, value, 0, REG_BINARY, (const BYTE*)&thePrefs, (DWORD)sizeof(thePrefs));
         RegCloseKey(key);
     }
+#elif defined(EMSCRIPTEN)
+    /*
+        To view:
+N
+        const dbName = '/glypha';
+        const storeName = 'FILE_DATA';
+        const key = '/glypha/highscores.bin';
+
+        const request = indexedDB.open(dbName);
+        request.onsuccess = function(event) {
+        const db = event.target.result;
+        const transaction = db.transaction(storeName, 'readonly');
+        const objectStore = transaction.objectStore(storeName);
+        const getRequest = objectStore.getAll();
+
+        getRequest.onsuccess = function(event) {
+            const entries = event.target.result;
+            let str = '';
+            for (let i = 0; i < entries[0].contents.length; i++) str += String.fromCharCode(entries[0].contents[i]);
+            console.log(str);
+        };
+        };
+    */
+
+    FILE *fptr;
+    fptr = fopen("/glypha/highscores.bin", "wb");
+    fwrite(&thePrefs, sizeof(PrefsInfo), 1, fptr);
+    fclose(fptr);
+    EM_ASM(
+        FS.syncfs(function (err) {
+            if (err) console.error("Cannot save prefs", err);
+            else console.log("High scores saved to virtual file system");
+        });
+    );
 #else
     (void)thePrefs;
 #endif

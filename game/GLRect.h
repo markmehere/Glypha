@@ -1,6 +1,8 @@
 #ifndef GLRECT
 #define GLRECT
 
+#include "GLGlobals.h"
+
 namespace GL {
 
 class Point;

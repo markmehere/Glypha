@@ -7,6 +7,7 @@ set(EXE_IDENTIFIER "com.kainjow.${EXE_NAME_NOSPACES}")
 if(APPLE)
   # must be set before project()
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum macOS deployment version")
+  set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 endif()
 
 project(Glypha)
@@ -48,6 +49,8 @@ if(HAVE_QT)
     game/GLSoundsQt.cpp
     game/GLSoundsQtImp.cpp
     game/GLSoundsQtImp.h
+    game/GLDataToWave.cpp
+    game/GLDataToWave.h
   )
 elseif(BEOS OR HAIKU)
   list(APPEND SOURCES

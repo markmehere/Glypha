@@ -15,9 +15,6 @@
 #include <pthread.h>
 #endif
 
-#define GL_GAME_WIDTH 640
-#define GL_GAME_HEIGHT 460
-
 namespace GL {
 
 class Lock {
@@ -119,10 +116,14 @@ public:
     void showHighScores();
     void resetHighScores();
     void showAbout();
+    void hideAll(bool value);
     void processHighScoreName(const char *name, int place);
     
     void setShowFPS(bool show);
     bool showFPS() const;
+    void conclude();
+
+    bool playing;
     
 private:
     Callback callback_;
@@ -139,7 +140,7 @@ private:
     double lastTime;
     double accumulator;
     void loadImages();
-    bool playing, pausing, evenFrame, flapKeyDown;
+    bool pausing, evenFrame, flapKeyDown;
 
     bool showFPS_;
     double fps_time;
@@ -325,8 +326,8 @@ private:
     void handleHighScores();
     void drawHighScores() const;
     void resetHighScores_();
-    void checkHighScore();
-    
+    bool checkHighScore();
+
     GL::Font font11;
     Image font11Img;
 
@@ -342,7 +343,8 @@ private:
     Image aboutImg;
     bool aboutVisible;
     void drawAbout(Renderer *r) const;
-    
+    void drawMenu(Renderer *r) const;
+
     Prefs prefs_;
 };
 

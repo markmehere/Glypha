@@ -8,7 +8,7 @@ void GL::Renderer::resize(int width, int height)
     
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0.0, w, h, 0.0, 0.0, 1.0);
+	glOrtho(0.0, GL_GAME_WIDTH, GL_GAME_HEIGHT, 0.0, 0.0, 1.0);
 	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();

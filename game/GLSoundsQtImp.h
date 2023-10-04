@@ -9,21 +9,6 @@
 
 namespace GL {
 
-struct WaveData {
-    QAudioFormat format;
-    char *data;
-    size_t dataLen;
-    bool playing;
-    WaveData()
-        : data(0)
-        , dataLen(0)
-        , playing(false)
-    {
-    }
-
-    WaveData(const WaveData& other) = delete;
-};
-
 class SoundsQtImp : public QObject {
     Q_OBJECT
 public:
