@@ -64,8 +64,10 @@
 
 #ifdef EMSCRIPTEN
 extern bool audioIsMuted;
-bool prefLoaded = false;
+static bool prefLoaded = false;
 #endif
+
+static int lastPlaceChanged = -1;
 
 GL::Game::Game(Callback callback, HighScoreNameCallback highScoreCallback, void *context)
     : playing(false)
@@ -93,6 +95,9 @@ GL::Game::Game(Callback callback, HighScoreNameCallback highScoreCallback, void 
     , highScoresTitleWidth(font11.measureText(highScoresTitle))
     , aboutVisible(false)
 {
+    warnFrame.set(100, 20, 230, 36);
+    warnBody.set(102, 22, 228, 34);
+    
     flameDestRects[0].setSize(16, 16);
     flameDestRects[1].setSize(16, 16);
     flameDestRects[0].offsetBy(87, 325);
@@ -454,6 +459,7 @@ void GL::Game::newGame()
     }
 #endif
 
+    showWarn = false;
     countDownTimer = 0;
 	numLedges = 3;
 	levelOn = 0;
@@ -521,7 +527,7 @@ bool GL::Game::checkHighScore()
         while ((score_ > thePrefs.highScores[i].score) && (i >= 0)) {
             thePrefs.highScores[i + 1].score = thePrefs.highScores[i].score;
             thePrefs.highScores[i + 1].level = thePrefs.highScores[i].level;
-            snprintf(thePrefs.highScores[i].name, sizeof(thePrefs.highScores[i].name), "%s", thePrefs.highScores[i + 1].name);
+            snprintf(thePrefs.highScores[i + 1].name, sizeof(thePrefs.highScores[i].name), "%s", thePrefs.highScores[i].name);
             i--;
         }
         
@@ -540,8 +546,9 @@ void GL::Game::processHighScoreName(const char *name, int place)
 {
     int i = place - 1;
     int slen = (int)strlen(name);
-    if (slen > 15) {
-        slen = 15;
+    lastPlaceChanged = i;
+    if (slen > 16) {
+        slen = 16;
     }
     memcpy(thePrefs.highScores[i].name, name, (size_t)slen);
     thePrefs.highScores[i].name[slen] = 0;
@@ -2682,12 +2689,14 @@ void GL::Game::resetWall()
     wallSrc.set(0, 0, 231, 199);
     wallSrc.offsetBy(204, 171);
     wallDest = wallSrc;
+    showWarn = false;
 }
 
 void GL::Game::closeWall()
 {
     wallState = kWallClosed;
     wallMode = kWallModeNone;
+    showWarn = false;
 }
 
 void GL::Game::drawWall() const
@@ -2807,6 +2816,14 @@ void GL::Game::drawHighScores() const
         
         char scoreStr[100];
         for (int i = 0; i < 10; ++i) {
+
+            if (lastPlaceChanged == i) {
+                r->setFillColor(142/255.0f, 179/255.0f, 255/255.0f);
+            }
+            else {
+                r->setFillColor(32/255.0f, 69/255.0f, 233/255.0f);
+            }
+
             const int y = scoreSrc.top + 31 + (i * 16);
             
             snprintf(scoreStr, sizeof(scoreStr), "%d", i + 1);
@@ -2918,6 +2935,11 @@ void GL::Game::drawAbout(Renderer *r) const
     font11.drawText("2018", x, y, font11Img);
 }
 
+void GL::Game::showKeyboardWarn()
+{
+    showWarn = true;
+}
+
 void GL::Game::drawMenu(Renderer *r) const
 {
     if (!playing) {
@@ -2932,6 +2954,14 @@ void GL::Game::drawMenu(Renderer *r) const
         }
         else {
             font11.drawText(" Mute Sound (M)", 430, 3, font11Img);
+        }
+        if (showWarn) {
+            r->setFillColor(56/255.0f, 4/255.0f, 56/255.0f);
+            r->fillRect(warnFrame);
+            r->setFillColor(0, 0, 0);
+            r->fillRect(warnBody);
+            r->setFillColor(122/255.0f, 71/255.0f, 122/255.0f);
+            font11.drawText("Press N to play", 124, 22, font11Img);
         }
         #endif
     }

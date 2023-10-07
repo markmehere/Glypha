@@ -4,14 +4,14 @@
 namespace GL {
 
 struct HighScore {
-    char name[16];
+    char name[17];
     int score;
     int level;
 };
     
 struct PrefsInfo {
     HighScore highScores[10];
-    char highName[16];
+    char highName[17];
 };
 
 class Prefs {

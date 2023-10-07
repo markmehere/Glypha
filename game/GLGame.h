@@ -122,6 +122,7 @@ public:
     void setShowFPS(bool show);
     bool showFPS() const;
     void conclude();
+    void showKeyboardWarn();
 
     bool playing;
     
@@ -298,6 +299,9 @@ private:
     Rect helpDest;
     Rect wallSrc;
     Rect wallDest;
+    Rect warnFrame;
+    Rect warnBody;
+    bool showWarn;
     Image helpImg;
     enum WallState {
         kWallClosed = 0,

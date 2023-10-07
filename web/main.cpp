@@ -30,7 +30,7 @@ static SDL_GLContext gl_context;
 GL::Game *game;
 GL::Image playerImg = GL::Image();
 
-static bool display_size_changed = false;
+static bool display_size_changed = true;
 static float xscale = 1.0;
 static float yscale = 1.0;
 
@@ -64,7 +64,7 @@ static void update() {
                     game->showAbout();
                 }
                 else if (not_playing && ypos < 22 && xpos < 200) {
-                    game->newGame();
+                    game->showKeyboardWarn();
                 }
                 else if (not_playing && ypos < 22 && xpos < 300) {
                     game->showHelp();
@@ -193,7 +193,14 @@ static void update() {
 
 // string return, no parameters
 EM_JS(char*, GetPlayerName, (), {
-  const name = prompt();
+  let name;
+  
+  try {
+    name = localStorage.getItem('glypha_hsname') || "Nemo";
+  }
+  catch (e) {
+    console.error(e);
+  }
 
   const byteCount = (Module.lengthBytesUTF8(name) + 1);
   
@@ -217,6 +224,7 @@ static void saveScore(const char *ignore, int place, void *context) {
 
 static EM_BOOL on_web_display_size_changed(int event_type, const EmscriptenUiEvent *event, void *user_data )
 {
+    SDL_Log("Size changed");
     display_size_changed = true;  // custom global flag
     return 0;
 }
@@ -252,7 +260,7 @@ int main(int argc, char *argv[]) {
     
     gl_context = SDL_GL_CreateContext(window);
     game = new GL::Game(NULL, saveScore, NULL);
-    game->renderer()->resize(800, 600);
+    game->renderer()->resize(w, h);
 
     emscripten_set_main_loop(update, 60, 1);
 

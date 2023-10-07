@@ -47,7 +47,13 @@ bool GL::Prefs::load(PrefsInfo& thePrefs)
     FILE *fptr;
     fptr = fopen("/glypha/highscores.bin", "rb");
     if (fptr) {
-        fread(&thePrefs, sizeof(PrefsInfo), 1, fptr);
+        int i;
+        for (i = 0; i < 10; i++) {
+            fread(&thePrefs.highScores[i].name[0], 16, 1, fptr);
+            fread(&thePrefs.highScores[i].score, sizeof(int), 1, fptr);
+            fread(&thePrefs.highScores[i].level, sizeof(int), 1, fptr);
+        }
+        fread(&thePrefs.highName[0], 16, 1, fptr);
         fclose(fptr);
         return true;
     }
@@ -86,7 +92,7 @@ void GL::Prefs::save(const PrefsInfo& thePrefs)
 #elif defined(EMSCRIPTEN)
     /*
         To view:
-N
+
         const dbName = '/glypha';
         const storeName = 'FILE_DATA';
         const key = '/glypha/highscores.bin';
@@ -102,14 +108,19 @@ N
             const entries = event.target.result;
             let str = '';
             for (let i = 0; i < entries[0].contents.length; i++) str += String.fromCharCode(entries[0].contents[i]);
-            console.log(str);
-        };
+                console.log(str);
+            };
         };
     */
-
     FILE *fptr;
     fptr = fopen("/glypha/highscores.bin", "wb");
-    fwrite(&thePrefs, sizeof(PrefsInfo), 1, fptr);
+    int i;
+    for (i = 0; i < 10; i++) {
+        fwrite(&thePrefs.highScores[i].name[0], 16, 1, fptr);
+        fwrite(&thePrefs.highScores[i].score, sizeof(int), 1, fptr);
+        fwrite(&thePrefs.highScores[i].level, sizeof(int), 1, fptr);
+    }
+    fwrite(&thePrefs.highName[0], 16, 1, fptr);
     fclose(fptr);
     EM_ASM(
         FS.syncfs(function (err) {
