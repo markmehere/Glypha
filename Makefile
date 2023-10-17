@@ -68,3 +68,18 @@ mobile: game webbuild/gl4es/lib/libGL.a mobbuild/icon.png mobbuild/index.html
 .PHONY: mobiles
 mobiles: mobile
 	cd mobbuild && python3 -m http.server
+
+.PHONY: publish
+publish: mobile web
+	mkdir -p glypha-iii
+	cp mobbuild/glypha_mobile.js glypha-iii
+	cp mobbuild/glypha_mobile.wasm glypha-iii
+	cp mobbuild/mobile.html glypha-iii
+	cp mobbuild/mobilegame.html glypha-iii
+	cp webbuild/icon.png glypha-iii
+	cp webbuild/glypha_iii.js glypha-iii
+	cp webbuild/glypha_iii.wasm glypha-iii
+	cp webbuild/game.html glypha-iii
+	cp webbuild/index.html glypha-iii
+	cp webbuild/controller.min.js glypha-iii
+	zip -vr glypha-iii.zip glypha-iii/ -x "*.DS_Store"
