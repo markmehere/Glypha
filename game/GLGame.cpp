@@ -2944,17 +2944,25 @@ void GL::Game::drawMenu(Renderer *r) const
 {
     if (!playing) {
         r->setFillColor(0.56f, 0.36f, 0.0f);
+        #ifdef MOBILE
+        font11.drawText("     About     ", 45, 3, font11Img);
+        font11.drawText("    New Game   ", 195, 3, font11Img);
+        font11.drawText(" High Scores   ", 345, 3, font11Img);
+        #else
         font11.drawText("   About (A)   ", 20, 3, font11Img);
         font11.drawText("  New Game (N) ", 120, 3, font11Img);
         font11.drawText("    Help (H)   ", 220, 3, font11Img);
         font11.drawText("High Scores (S)", 320, 3, font11Img);
+        #endif
         #ifdef EMSCRIPTEN
+        #ifndef MOBILE
         if (audioIsMuted) {
             font11.drawText(" Play Sound (M)", 430, 3, font11Img);
         }
         else {
             font11.drawText(" Mute Sound (M)", 430, 3, font11Img);
         }
+        #endif
         if (showWarn) {
             r->setFillColor(56/255.0f, 4/255.0f, 56/255.0f);
             r->fillRect(warnFrame);

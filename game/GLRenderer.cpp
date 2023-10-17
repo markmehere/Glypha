@@ -1,11 +1,18 @@
 #include "GLRenderer.h"
 
+int X_CORRECTION = 0;
+
 void GL::Renderer::resize(int width, int height)
 {
-    GLsizei w = width, h = height;
-	
-	glViewport(0, 0, w, h);
-    
+	GLsizei w = width, h = height;
+
+	#ifdef MOBILE
+	w = (800 * h) / 600;
+	X_CORRECTION = (width - w) / 4;
+	#endif
+
+	glViewport(X_CORRECTION, 0, w + X_CORRECTION * 2, h);
+
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0.0, GL_GAME_WIDTH, GL_GAME_HEIGHT, 0.0, 0.0, 1.0);
@@ -13,7 +20,7 @@ void GL::Renderer::resize(int width, int height)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
     
-    bounds_.setSize(width, height);
+	bounds_.setSize(width, height);
 }
 
 void GL::Renderer::clear()

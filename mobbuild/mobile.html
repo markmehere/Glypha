@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Glypha III - Mobile Instructions</title>
+    <style>
+      #content {
+        padding: 0;
+        margin: auto;
+        display: block;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 640px;
+        height: 460px;
+        text-align: center;
+        color: #fff;
+        font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background-color: #3d5269;
+      }
+
+      #hsname {
+        font-size: 16pt;
+        padding: 8pt;
+        width: 400px;
+      }
+
+      button {
+        display: inline-block;
+        font-size: 16pt;
+        padding: 8pt;
+        width: 160px;
+        margin: 20px auto;
+      }
+      
+      table {
+        margin: auto;
+      }
+
+      td {
+        border: 4px solid white;
+        padding: 1rem;
+        width: 30vw;
+      }
+
+      button {
+        display: inline-block;
+        font-size: 16pt;
+        padding: 8pt;
+        width: 160px;
+        margin: 20px auto;
+      }
+
+      .quit {
+        border: 4px solid white;
+        position: absolute;
+        font-size: 12px;
+        padding: 0.5rem;
+        left: calc(50% - 20px - 0.5rem - 4px);
+        margin-top: -20px;
+        width: 40px;
+        background-color: #3d5269;
+      }
+    </style>
+</head>
+
+<body>
+
+  <div id="content">
+    <img width="96px" height="96px" src="icon.png" alt="Glypha III icon" />
+    
+    <p>In the mobile version of Glypha III, the screen is divided into five parts.</p>
+    
+    <table><tbody>
+      <tr><td>Up-left</td><td><div class="quit">Quit</div>Up-right</td></tr>
+      <tr><td colspan="2">Up-straight</td></tr>
+      <tr><td>Move left</td><td>Move right</td></tr>
+    </tbody></table>
+    
+    <p>Most players will play with just the bottom two-thirds of the screen.</p>
+
+    <button onclick="
+      event.preventDefault();
+      window.location.href = 'mobilegame.html';
+    ">Play</button>
+  </div>
+
+</body>
+
+</html>

@@ -42,24 +42,13 @@
     </style>
 </head>
 
-<body onresize="
-  if (window.innerWidth > 800) {
-    document.getElementById('content').width = 800;
-    document.getElementById('content').height = 600;
-  }
-  else {
-    document.getElementById('content').width = 640;
-    document.getElementById('content').height = 460;
-  }
-">
+<body>
 
   <div id="content">
     <img width="128px" height="128px" src="icon.png" alt="Glypha III icon" />
     <h1>Glypha III</h1>
 
-
     <h3>Please enter your name for high scores...</h3>
-
 
     <form onsubmit="
       event.preventDefault();
@@ -69,7 +58,12 @@
       catch (e) {
         console.error(e);
       }
-      window.location.href = 'game.html';
+      if (window.matchMedia('(any-hover: hover)').matches) {
+        window.location.href = 'game.html';
+      }
+      else {
+        window.location.href = 'mobile.html';
+      }
     ">
       <input id="hsname" type="text" placeholder="Your name" maxlength="16" />
       <div>

@@ -45,6 +45,12 @@ webbuild/gl4es/lib/libGL.a: webbuild/gl4es/include/GL/gl.h
 	cd webbuild/gl4es/build && emcmake cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNOX11=ON -DNOEGL=ON -DSTATICLIB=ON
 	cd webbuild/gl4es/build && make
 
+mobbuild/icon.png:
+	cp ./webbuild/icon.png mobbuild/icon.png
+
+mobbuild/index.html:
+	cp ./webbuild/index.html mobbuild/index.html
+
 .PHONY: web
 web: game webbuild/gl4es/lib/libGL.a
 	cd webbuild && emcmake cmake -DCMAKE_BUILD_TYPE=Release .
@@ -53,3 +59,12 @@ web: game webbuild/gl4es/lib/libGL.a
 .PHONY: webs
 webs: web
 	cd webbuild && python3 -m http.server
+
+.PHONY: mobile
+mobile: game webbuild/gl4es/lib/libGL.a mobbuild/icon.png mobbuild/index.html
+	cd mobbuild && emcmake cmake -DCMAKE_BUILD_TYPE=Release .
+	cd mobbuild && cmake --build . --config Release
+
+.PHONY: mobiles
+mobiles: mobile
+	cd mobbuild && python3 -m http.server

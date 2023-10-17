@@ -23,6 +23,8 @@
 #include <fstream>
 #include <vector>
 
+extern int X_CORRECTION;
+
 static bool quitting = false;
 static SDL_Window *window = NULL;
 static SDL_GLContext gl_context;
@@ -46,7 +48,11 @@ static void update() {
         SDL_Log("Resizing to %d %d", w, h);
         SDL_SetWindowSize(window, w, h);
         game->renderer()->resize(w, h);
+        #ifdef MOBILE
+        xscale = GL_GAME_WIDTH / (float)(w - X_CORRECTION * 2);
+        #else
         xscale = GL_GAME_WIDTH / (float)w;
+        #endif
         yscale = GL_GAME_HEIGHT / (float)h;
         display_size_changed = false;
     }
@@ -56,9 +62,10 @@ static void update() {
         bool not_playing = !game->playing;
         bool hideAll = false;
         GL::Game::Key key = GL::Game::KeyNone;
-        int xpos = (int)(event.button.x * xscale);
+        int xpos = (int)((event.button.x - X_CORRECTION) * xscale);
         int ypos = (int)(event.button.y * yscale);
         switch (event.type) {
+            #ifndef MOBILE
             case SDL_MOUSEBUTTONDOWN:
                 if (not_playing && ypos < 22 && xpos < 100) {
                     game->showAbout();
@@ -79,6 +86,74 @@ static void update() {
                     game->handleMouseDownEvent(GL::Point(xpos, ypos));
                 }
                 break;
+            #else
+            case SDL_MOUSEBUTTONUP:
+            case SDL_MOUSEBUTTONDOWN:
+                if (not_playing && event.type == SDL_MOUSEBUTTONDOWN) {
+                    if (xpos >= 0 && ypos < 22 && xpos < 150) {
+                        game->showAbout();
+                    }
+                    else if (xpos >= 0 && ypos < 22 && xpos < 300) {
+                        game->newGame();
+                    }
+                    else if (xpos >= 0 && ypos < 22 && xpos < 450) {
+                        game->showHighScores();
+                    }
+                    else {
+                        game->handleMouseDownEvent(GL::Point(xpos, ypos));
+                    }
+                }
+                else if (!not_playing) {
+                    if (xpos > 280 && xpos < 360 && ypos < 50) {
+                        game->endGame();
+                    }
+                    else if (ypos < 160 && xpos < 320) {
+                        if (event.type == SDL_MOUSEBUTTONDOWN) {
+                            game->handleKeyDownEvent(GL::Game::KeyLeftArrow);
+                            game->handleKeyDownEvent(GL::Game::KeySpacebar);
+                        }
+                        else {
+                            game->handleKeyUpEvent(GL::Game::KeyLeftArrow);
+                            game->handleKeyUpEvent(GL::Game::KeySpacebar);
+                        }
+                    }
+                    else if (ypos < 160 && xpos >= 320) {
+                        if (event.type == SDL_MOUSEBUTTONDOWN) {
+                            game->handleKeyDownEvent(GL::Game::KeyRightArrow);
+                            game->handleKeyDownEvent(GL::Game::KeySpacebar);
+                        }
+                        else {
+                            game->handleKeyUpEvent(GL::Game::KeyRightArrow);
+                            game->handleKeyUpEvent(GL::Game::KeySpacebar);
+                        }
+                    }
+                    else if (ypos < 320) {
+                        if (event.type == SDL_MOUSEBUTTONDOWN) {
+                            game->handleKeyDownEvent(GL::Game::KeySpacebar);
+                        }
+                        else {
+                            game->handleKeyUpEvent(GL::Game::KeySpacebar);
+                        }
+                    }
+                    else if (xpos < 320) {
+                        if (event.type == SDL_MOUSEBUTTONDOWN) {
+                            game->handleKeyDownEvent(GL::Game::KeyLeftArrow);
+                        }
+                        else {
+                            game->handleKeyUpEvent(GL::Game::KeyLeftArrow);
+                        }
+                    }
+                    else if (xpos >= 320) {
+                        if (event.type == SDL_MOUSEBUTTONDOWN) {
+                            game->handleKeyDownEvent(GL::Game::KeyRightArrow);
+                        }
+                        else {
+                            game->handleKeyUpEvent(GL::Game::KeyRightArrow);
+                        }
+                    }
+                }
+                break;
+            #endif
             case SDL_KEYUP:
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
