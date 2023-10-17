@@ -220,10 +220,10 @@ void endAudio(void)
 
 void pauseAudio(void)
 {
-		doNotRestore = audioIsMuted;
+    doNotRestore = audioIsMuted;
     if(gDevice->audioEnabled)
     {
-				audioIsMuted = true;
+        audioIsMuted = true;
         endAudio();
     }
 }
@@ -232,7 +232,7 @@ void unpauseAudio(void)
 {
     if(gDevice->audioEnabled && !doNotRestore)
     {
-				audioIsMuted = false;
+        audioIsMuted = false;
         initAudio();
     }
 }
@@ -241,12 +241,12 @@ void toggleAudio(void)
 {
     if(gDevice->audioEnabled && audioIsMuted)
     {
-				audioIsMuted = false;
+        audioIsMuted = false;
         initAudio();
     }
-		else if(gDevice->audioEnabled && !audioIsMuted)
+    else if(gDevice->audioEnabled && !audioIsMuted)
     {
-				audioIsMuted = true;
+        audioIsMuted = true;
         endAudio();
     }
 }

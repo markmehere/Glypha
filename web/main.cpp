@@ -37,6 +37,21 @@ static float xscale = 1.0;
 static float yscale = 1.0;
 
 static SDL_Keycode lastKey = 0;
+static unsigned short lastButton = SDL_CONTROLLER_BUTTON_INVALID;
+static short showSecondHelp = 0;
+static short lastLeftRight = 0;
+
+SDL_GameController *findController() {
+    for (int i = 0; i < SDL_NumJoysticks(); i++) {
+        if (SDL_IsGameController(i)) {
+            return SDL_GameControllerOpen(i);
+        }
+    }
+
+    return NULL;
+}
+
+SDL_GameController *controller = NULL;
 
 static void update() {
     SDL_Event event;
@@ -64,6 +79,22 @@ static void update() {
         GL::Game::Key key = GL::Game::KeyNone;
         int xpos = (int)((event.button.x - X_CORRECTION) * xscale);
         int ypos = (int)(event.button.y * yscale);
+        short axis =  SDL_JoystickGetAxis(SDL_GameControllerGetJoystick(controller), 0);
+        if (axis > 3500) {
+            if (lastLeftRight < 0) game->handleKeyUpEvent(GL::Game::KeyLeftArrow);
+            game->handleKeyDownEvent(GL::Game::KeyRightArrow);
+            lastLeftRight = 1;
+        }
+        else if (axis < -3500) {
+            if (lastLeftRight > 0) game->handleKeyUpEvent(GL::Game::KeyRightArrow);
+            game->handleKeyDownEvent(GL::Game::KeyLeftArrow);
+            lastLeftRight = -1;
+        }
+        else {
+            if (lastLeftRight < 0) game->handleKeyUpEvent(GL::Game::KeyLeftArrow);
+            if (lastLeftRight > 0) game->handleKeyUpEvent(GL::Game::KeyRightArrow);
+            lastLeftRight = 0;
+        }
         switch (event.type) {
             #ifndef MOBILE
             case SDL_MOUSEBUTTONDOWN:
@@ -84,6 +115,89 @@ static void update() {
                 }
                 else {
                     game->handleMouseDownEvent(GL::Point(xpos, ypos));
+                }
+                break;
+            case SDL_CONTROLLERDEVICEADDED:
+                if (!controller) {
+                    controller = SDL_GameControllerOpen(event.cdevice.which);
+                }
+                break;
+            case SDL_CONTROLLERDEVICEREMOVED:
+                if (controller && event.cdevice.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(controller))) {
+                    SDL_GameControllerClose(controller);
+                    controller = findController();
+                }
+                break;
+            case SDL_CONTROLLERBUTTONUP:
+            case SDL_CONTROLLERBUTTONDOWN:
+                if (controller && event.cdevice.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(controller))) {
+                    switch (event.cbutton.button) {
+                        case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_BACK:
+                            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                                toggleAudio();
+                            }
+                            break;
+                        case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_START:
+                            if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                                game->pauseResumeGame();
+                            }
+                            break;
+                        case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_Y:
+                            if (not_playing) {
+                                if (event.type == SDL_CONTROLLERBUTTONDOWN && lastButton == SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_Y) {
+                                    game->hideAll(true);
+                                }
+                                else if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                                    game->showHighScores();
+                                }
+                            }
+                            break;
+                        case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_X:
+                            if (not_playing) {
+                                game->newGame();
+                            }
+                            break;
+                        case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_B:
+                            if (not_playing) {
+                                if (event.type == SDL_CONTROLLERBUTTONDOWN && lastButton == SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_B) {
+                                    if (showSecondHelp == 1) {
+                                        game->handleKeyDownEvent(GL::Game::KeyPageDown);
+                                        showSecondHelp = 2;
+                                    }
+                                    else {
+                                        showSecondHelp = 0;
+                                        game->hideAll(true);
+                                    }
+                                }
+                                else if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                                    game->showHelp();
+                                    showSecondHelp = 1;
+                                }
+                            }
+                            else if (game->paused() && event.type == SDL_CONTROLLERBUTTONDOWN) {
+                                game->endGame();
+                            }
+                            break;
+                        case SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_A:
+                            if (not_playing) {
+                                if (event.type == SDL_CONTROLLERBUTTONDOWN && lastButton == SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_A) {
+                                    game->hideAll(true);
+                                }
+                                else if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                                    game->showAbout();
+                                }
+                            }
+                            else {
+                                if (event.type == SDL_CONTROLLERBUTTONUP) game->handleKeyUpEvent(GL::Game::KeySpacebar);
+                                else game->handleKeyDownEvent(GL::Game::KeySpacebar);
+                            }
+                            break;
+                    }
+                    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                        if (event.cbutton.button == lastButton && showSecondHelp == 0) lastButton = SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_INVALID;
+                        else lastButton = event.cbutton.button;
+                        if (event.cbutton.button != SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_B) showSecondHelp = 0;
+                    }
                 }
                 break;
             #else
@@ -287,13 +401,11 @@ EM_JS(char*, GetPlayerName, (), {
 
 
 static void saveScore(const char *ignore, int place, void *context) {
-    pauseAudio();
     SDL_WaitEventTimeout(NULL, 100);
     char *namePointer = GetPlayerName();
     game->processHighScoreName(namePointer, place);
     free(namePointer);
     SDL_WaitEventTimeout(NULL, 750);
-    unpauseAudio();
     game->conclude();
 }
 
@@ -315,14 +427,11 @@ int main(int argc, char *argv[]) {
     );
     emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, false, on_web_display_size_changed);
 
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO) != 0) {
         SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
         return 1;
     }
-    if (SDL_Init(SDL_INIT_AUDIO) != 0) {
-        SDL_Log("Failed to initialize SDL audio: %s", SDL_GetError());
-        return 1;
-    }
+    controller = findController();
 
     int w, h;
     emscripten_get_canvas_element_size("#canvas", &w, &h);

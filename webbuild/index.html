@@ -40,17 +40,14 @@
         margin: 20px auto;
       }
     </style>
+    <script src="controller.min.js"></script>
 </head>
 
 <body>
 
-  <div id="content">
-    <img width="128px" height="128px" src="icon.png" alt="Glypha III icon" />
-    <h1>Glypha III</h1>
+  <script>
+    function submitForm(e) {
 
-    <h3>Please enter your name for high scores...</h3>
-
-    <form onsubmit="
       event.preventDefault();
       try {
         localStorage.setItem('glypha_hsname', document.getElementById('hsname').value);
@@ -64,7 +61,16 @@
       else {
         window.location.href = 'mobile.html';
       }
-    ">
+    }
+  </script>
+
+  <div id="content">
+    <img width="128px" height="128px" src="icon.png" alt="Glypha III icon" />
+    <h1>Glypha III</h1>
+
+    <h3>Please enter your name for high scores...</h3>
+
+    <form id="playForm" onsubmit="submitForm">
       <input id="hsname" type="text" placeholder="Your name" maxlength="16" />
       <div>
         <button id="playbtn">Let's play!</button>
@@ -120,6 +126,17 @@
 
         return name;
     }
+
+    Controller.search();
+    window.addEventListener('gc.button.press', function(event) {
+      const button = event.detail.name;
+      if (button === 'FACE_1' || button === 'FACE_3') {
+        submitForm(event);
+      }
+      else if (button === 'FACE_2' || button === 'FACE_4') {
+        document.getElementById('hsname').value = generateName(true);
+      }
+    }, false);
 
     document.getElementById('hsname').value = generateName();
   </script>

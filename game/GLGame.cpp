@@ -67,6 +67,10 @@ extern bool audioIsMuted;
 static bool prefLoaded = false;
 #endif
 
+#ifdef EMSCRIPTEN
+extern SDL_GameController *controller;
+#endif
+
 static int lastPlaceChanged = -1;
 
 GL::Game::Game(Callback callback, HighScoreNameCallback highScoreCallback, void *context)
@@ -2944,23 +2948,41 @@ void GL::Game::drawMenu(Renderer *r) const
 {
     if (!playing) {
         r->setFillColor(0.56f, 0.36f, 0.0f);
+        #ifdef EMSCRIPTEN
         #ifdef MOBILE
         font11.drawText("     About     ", 45, 3, font11Img);
         font11.drawText("    New Game   ", 195, 3, font11Img);
         font11.drawText(" High Scores   ", 345, 3, font11Img);
         #else
-        font11.drawText("   About (A)   ", 20, 3, font11Img);
-        font11.drawText("  New Game (N) ", 120, 3, font11Img);
-        font11.drawText("    Help (H)   ", 220, 3, font11Img);
-        font11.drawText("High Scores (S)", 320, 3, font11Img);
-        #endif
-        #ifdef EMSCRIPTEN
-        #ifndef MOBILE
-        if (audioIsMuted) {
-            font11.drawText(" Play Sound (M)", 430, 3, font11Img);
+        if (controller) {
+            font11.drawText("   About (A)   ", 20, 3, font11Img);
+            font11.drawText("  New Game (X) ", 120, 3, font11Img);
+            font11.drawText("    Help (B)   ", 220, 3, font11Img);
+            font11.drawText("High Scores (Y)", 320, 3, font11Img);
         }
         else {
-            font11.drawText(" Mute Sound (M)", 430, 3, font11Img);
+            font11.drawText("   About (A)   ", 20, 3, font11Img);
+            font11.drawText("  New Game (N) ", 120, 3, font11Img);
+            font11.drawText("    Help (H)   ", 220, 3, font11Img);
+            font11.drawText("High Scores (S)", 320, 3, font11Img);
+        }
+        #endif
+        #ifndef MOBILE
+        if (audioIsMuted) {
+            if (controller) {
+                font11.drawText("Play Sound (View)", 430, 3, font11Img);
+            }
+            else {
+                font11.drawText(" Play Sound (M)", 430, 3, font11Img);
+            }
+        }
+        else {
+            if (controller) {
+                font11.drawText("Mute Sound (View)", 430, 3, font11Img);
+            }
+            else {
+                font11.drawText(" Mute Sound (M)", 430, 3, font11Img);
+            }
         }
         #endif
         if (showWarn) {
@@ -2975,14 +2997,34 @@ void GL::Game::drawMenu(Renderer *r) const
     }
     else if (pausing) {
         r->setFillColor(0.56f, 0.36f, 0.0f);
-        font11.drawText("   Quit to Menu (Q)   ", 20, 3, font11Img);
-        font11.drawText("   *** PAUSED *** (Esc/P)   ", 220, 3, font11Img);
         #ifdef EMSCRIPTEN
-        if (audioIsMuted) {
-            font11.drawText(" Play Sound (M)", 430, 3, font11Img);
+        if (controller) {
+            font11.drawText("   Quit to Menu (B)   ", 20, 3, font11Img);
         }
         else {
-            font11.drawText(" Mute Sound (M)", 430, 3, font11Img);
+            font11.drawText("   Quit to Menu (Q)   ", 20, 3, font11Img);
+        }
+        if (controller) {
+            font11.drawText("   *** PAUSED *** (Menu)   ", 220, 3, font11Img);
+        }
+        else {
+            font11.drawText("   *** PAUSED *** (Esc/P)   ", 220, 3, font11Img);
+        }
+        if (audioIsMuted) {
+            if (controller) {
+                font11.drawText("Play Sound (View)", 430, 3, font11Img);
+            }
+            else {
+                font11.drawText(" Play Sound (M)", 430, 3, font11Img);
+            }
+        }
+        else {
+            if (controller) {
+                font11.drawText("Mute Sound (View)", 430, 3, font11Img);
+            }
+            else {
+                font11.drawText(" Mute Sound (M)", 430, 3, font11Img);
+            }
         }
         #endif
 
