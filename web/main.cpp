@@ -41,6 +41,58 @@ static unsigned short lastButton = SDL_CONTROLLER_BUTTON_INVALID;
 static short showSecondHelp = 0;
 static short lastLeftRight = 0;
 
+static int touches[5][3] = { 0 };
+
+static void addTouch(int which, int id) {
+    if (which == -1) return;
+    for (int i = 0; i < 3; i++) {
+        if (touches[which][i] == id) return;
+        if (touches[which][i] != 0) {
+            touches[which][i] = id;
+            return;
+        }
+    }
+    touches[which][0] = id;
+}
+
+static int removeTouch(int defaultWhich, int id) {
+    int retValue = defaultWhich;
+    for (int which = 0; which < 5; which++) {
+        for (int i = 0; i < 3; i++) {
+            if (touches[which][i] == id) {
+                if (which != defaultWhich) SDL_Log("Finger %d has slid", id);
+                touches[which][i] = 0;
+                retValue = which;
+            }
+        }
+    }
+    if (retValue == -1) return -1;
+    for (int i = 0; i < 3; i++) {
+        touches[retValue][i] = 0;
+    }
+    return retValue;
+}
+
+static int getFingerId(long long value) {
+    int result = (int)value;
+    result += 16;
+    return result;
+}
+
+static int getTouchRegion(int xpos, int ypos) {
+    if (ypos < 240 && xpos < 320) {
+        return 0;
+    }
+    else if (xpos < 320) {
+        return 1;
+    }
+    else {
+        return 2;
+    }
+
+    return -1;
+}
+
 SDL_GameController *findController() {
     for (int i = 0; i < SDL_NumJoysticks(); i++) {
         if (SDL_IsGameController(i)) {
@@ -77,8 +129,9 @@ static void update() {
         bool not_playing = !game->playing;
         bool hideAll = false;
         GL::Game::Key key = GL::Game::KeyNone;
-        int xpos = (int)((event.button.x - X_CORRECTION) * xscale);
-        int ypos = (int)(event.button.y * yscale);
+        int touchRegion;
+        int xpos;
+        int ypos;
         short axis =  SDL_JoystickGetAxis(SDL_GameControllerGetJoystick(controller), 0);
         if (axis > 3500) {
             if (lastLeftRight < 0) game->handleKeyUpEvent(GL::Game::KeyLeftArrow);
@@ -98,6 +151,8 @@ static void update() {
         switch (event.type) {
             #ifndef MOBILE
             case SDL_MOUSEBUTTONDOWN:
+                xpos = (int)((event.button.x - X_CORRECTION) * xscale);
+                ypos = (int)(event.button.y * yscale);
                 if (not_playing && ypos < 22 && xpos < 100) {
                     game->showAbout();
                 }
@@ -201,69 +256,76 @@ static void update() {
                 }
                 break;
             #else
+                case SDL_FINGERUP:
+                case SDL_FINGERDOWN:
+                    if (!not_playing && !game->paused()) {
+                        xpos = (int)(event.tfinger.x  * 640.0f);
+                        ypos = (int)(event.tfinger.y * 480.0f);
+                        touchRegion = getTouchRegion(xpos, ypos);
+                        if (event.type == SDL_FINGERDOWN) {
+                            addTouch(touchRegion, getFingerId(event.tfinger.fingerId));
+                        }
+                        else {
+                            touchRegion = removeTouch(touchRegion, getFingerId(event.tfinger.fingerId));
+                        }
+                        switch (touchRegion) {
+                            case 0:
+                                if (event.type == SDL_FINGERDOWN) {
+                                    game->handleKeyDownEvent(GL::Game::KeyRightArrow);
+                                }
+                                else {
+                                    game->handleKeyUpEvent(GL::Game::KeyRightArrow);
+                                }
+                                break;
+                            case 1:
+                                if (event.type == SDL_FINGERDOWN) {
+                                    game->handleKeyDownEvent(GL::Game::KeyLeftArrow);
+                                }
+                                else {
+                                    game->handleKeyUpEvent(GL::Game::KeyLeftArrow);
+                                }
+                                break;
+                            case 2:
+                                if (event.type == SDL_FINGERDOWN) {
+                                    game->handleKeyDownEvent(GL::Game::KeySpacebar);
+                                }
+                                else {
+                                    game->handleKeyUpEvent(GL::Game::KeySpacebar);
+                                }
+                                break;
+                        }
+                    }
+                    break;
             case SDL_MOUSEBUTTONUP:
             case SDL_MOUSEBUTTONDOWN:
+                xpos = (int)((event.button.x - X_CORRECTION) * xscale);
+                ypos = (int)(event.button.y * yscale);
+                if (not_playing && event.type == SDL_MOUSEBUTTONUP && xpos >= 150 && ypos < 22 && xpos < 300) {
+                    game->newGame();
+                }
                 if (not_playing && event.type == SDL_MOUSEBUTTONDOWN) {
                     if (xpos >= 0 && ypos < 22 && xpos < 150) {
                         game->showAbout();
                     }
-                    else if (xpos >= 0 && ypos < 22 && xpos < 300) {
-                        game->newGame();
+                    else if (xpos >= 150 && ypos < 22 && xpos < 300) {
+                        /* no action */
                     }
-                    else if (xpos >= 0 && ypos < 22 && xpos < 450) {
+                    else if (xpos >= 300 && ypos < 22 && xpos < 450) {
                         game->showHighScores();
                     }
                     else {
                         game->handleMouseDownEvent(GL::Point(xpos, ypos));
                     }
                 }
-                else if (!not_playing) {
-                    if (xpos > 280 && xpos < 360 && ypos < 50) {
+                else if (!not_playing && event.type == SDL_MOUSEBUTTONUP) {
+                    if (xpos > 320 && xpos < 400 && ypos < 100) {
+                        #ifdef MOBILE
+                        toggleAudio();
+                        #endif
+                        game->pauseResumeGame();
+                    }
+                    else if (game->paused() && ypos < 22 && xpos < 100) {
                         game->endGame();
-                    }
-                    else if (ypos < 160 && xpos < 320) {
-                        if (event.type == SDL_MOUSEBUTTONDOWN) {
-                            game->handleKeyDownEvent(GL::Game::KeyLeftArrow);
-                            game->handleKeyDownEvent(GL::Game::KeySpacebar);
-                        }
-                        else {
-                            game->handleKeyUpEvent(GL::Game::KeyLeftArrow);
-                            game->handleKeyUpEvent(GL::Game::KeySpacebar);
-                        }
-                    }
-                    else if (ypos < 160 && xpos >= 320) {
-                        if (event.type == SDL_MOUSEBUTTONDOWN) {
-                            game->handleKeyDownEvent(GL::Game::KeyRightArrow);
-                            game->handleKeyDownEvent(GL::Game::KeySpacebar);
-                        }
-                        else {
-                            game->handleKeyUpEvent(GL::Game::KeyRightArrow);
-                            game->handleKeyUpEvent(GL::Game::KeySpacebar);
-                        }
-                    }
-                    else if (ypos < 320) {
-                        if (event.type == SDL_MOUSEBUTTONDOWN) {
-                            game->handleKeyDownEvent(GL::Game::KeySpacebar);
-                        }
-                        else {
-                            game->handleKeyUpEvent(GL::Game::KeySpacebar);
-                        }
-                    }
-                    else if (xpos < 320) {
-                        if (event.type == SDL_MOUSEBUTTONDOWN) {
-                            game->handleKeyDownEvent(GL::Game::KeyLeftArrow);
-                        }
-                        else {
-                            game->handleKeyUpEvent(GL::Game::KeyLeftArrow);
-                        }
-                    }
-                    else if (xpos >= 320) {
-                        if (event.type == SDL_MOUSEBUTTONDOWN) {
-                            game->handleKeyDownEvent(GL::Game::KeyRightArrow);
-                        }
-                        else {
-                            game->handleKeyUpEvent(GL::Game::KeyRightArrow);
-                        }
                     }
                 }
                 break;
@@ -398,7 +460,6 @@ EM_JS(char*, GetPlayerName, (), {
 
   return namePointer;
 });
-
 
 static void saveScore(const char *ignore, int place, void *context) {
     SDL_WaitEventTimeout(NULL, 100);

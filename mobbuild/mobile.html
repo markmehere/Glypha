@@ -58,13 +58,13 @@
         margin: 20px auto;
       }
 
-      .quit {
+      .pause {
         border: 4px solid white;
         position: absolute;
         font-size: 12px;
         padding: 0.5rem;
-        left: calc(50% - 20px - 0.5rem - 4px);
-        margin-top: -20px;
+        left: 50%;
+        margin-top: -38px;
         width: 40px;
         background-color: #3d5269;
       }
@@ -74,22 +74,25 @@
 <body>
 
   <div id="content">
-    <img width="96px" height="96px" src="icon.png" alt="Glypha III icon" />
+    <img style="width: 15vh; height: 15vh; max-width: 96px; max-height: 96px;"src="icon.png" alt="Glypha III icon" />
     
-    <p>In the mobile version of Glypha III, the screen is divided into five parts.</p>
+    <p>In the mobile version of Glypha III, the screen is divided into three parts.</p>
     
     <table><tbody>
-      <tr><td>Up-left</td><td><div class="quit">Quit</div>Up-right</td></tr>
-      <tr><td colspan="2">Up-straight</td></tr>
-      <tr><td>Move left</td><td>Move right</td></tr>
+      <tr><td>Right<div class="pause">Pause</div></td><td rowspan="2">Upwards</td></tr>
+      <tr><td>Left</td></tr>
     </tbody></table>
     
-    <p>Most players will play with just the bottom two-thirds of the screen.</p>
+    <p>You can hold left/right to move but you must tap repeatedly to flap upwards.</p>
 
     <button onclick="
       event.preventDefault();
       window.location.href = 'mobilegame.html';
-    ">Play</button>
+    ">Play (sound)</button>
+    <button onclick="
+      event.preventDefault();
+      window.location.href = 'mobilegame.html?muted';
+    ">Play (mute)</button>
   </div>
 
 </body>

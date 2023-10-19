@@ -22,6 +22,9 @@
 
 #include <SDL2/SDL.h>
 
+#include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
+
 #include "audio.h"
 
 /*
@@ -160,9 +163,13 @@ void initAudio(void)
         return;
     }
 
+    int neverUseAudio = EM_ASM_INT({
+        return  window.location.href.indexOf('?muted') > 0 ? 1 : 0;
+    });
+
     gDevice->audioEnabled = 0;
 
-    if(!(SDL_WasInit(SDL_INIT_AUDIO) & SDL_INIT_AUDIO))
+    if(!(SDL_WasInit(SDL_INIT_AUDIO) & SDL_INIT_AUDIO) || neverUseAudio > 0)
     {
         fprintf(stderr, "[%s: %d]Error: SDL_INIT_AUDIO not initialized\n", __FILE__, __LINE__);
         return;

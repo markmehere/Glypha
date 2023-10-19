@@ -2997,7 +2997,10 @@ void GL::Game::drawMenu(Renderer *r) const
     }
     else if (pausing) {
         r->setFillColor(0.56f, 0.36f, 0.0f);
-        #ifdef EMSCRIPTEN
+        #ifdef MOBILE
+        font11.drawText("   Quit to Menu     ", 20, 3, font11Img);
+        font11.drawText("*** PAUSED ***", 320, 3, font11Img);
+        #elif EMSCRIPTEN
         if (controller) {
             font11.drawText("   Quit to Menu (B)   ", 20, 3, font11Img);
         }
