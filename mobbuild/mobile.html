@@ -16,7 +16,7 @@
         left: 0;
         right: 0;
         width: 640px;
-        height: 460px;
+        height: fit-content;
         text-align: center;
         color: #fff;
         font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
@@ -46,7 +46,13 @@
 
       td {
         border: 4px solid white;
-        padding: 1rem;
+        padding: 1.5rem;
+        width: 30vw;
+      }
+
+      td.onethird {
+        border: 4px solid white;
+        padding: 0.5rem;
         width: 30vw;
       }
 
@@ -64,7 +70,7 @@
         font-size: 12px;
         padding: 0.5rem;
         left: 50%;
-        margin-top: -38px;
+        margin-top: 4px;
         width: 40px;
         background-color: #3d5269;
       }
@@ -78,9 +84,13 @@
     
     <p>In the mobile version of Glypha III, the screen is divided into three parts.</p>
     
-    <table><tbody>
-      <tr><td>Right<div class="pause">Pause</div></td><td rowspan="2">Upwards</td></tr>
-      <tr><td>Left</td></tr>
+    <table>
+    <thead>
+      <div class="pause">Pause</div>
+    </thead>
+    <tbody>
+      <tr><td>Left</td><td rowspan="3">Upwards</td></tr>
+      <tr><td class="onethird">Right</td></tr>
     </tbody></table>
     
     <p>You can hold left/right to move but you must tap repeatedly to flap upwards.</p>

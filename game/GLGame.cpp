@@ -3032,4 +3032,50 @@ void GL::Game::drawMenu(Renderer *r) const
         #endif
 
     }
+    else {
+        #ifdef MOBILE
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBegin(GL_TRIANGLES);
+        glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyLeftArrow ? 0.6f : 0.4f);
+        glVertex2f(70.0f, 215.0f);
+        glVertex2f(70.0f, 265.0f);
+        glVertex2f(40.0f, 240.0f);
+        glEnd();
+        glBegin(GL_QUADS);
+        glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyLeftArrow ? 0.6f : 0.4f);
+        glVertex2f(105.0f, 230.0f);
+        glVertex2f(70.0f, 230.0f);
+        glVertex2f(70.0f, 250.0f);
+        glVertex2f(105.0f, 250.0f);
+        glEnd();
+        glBegin(GL_TRIANGLES);
+        glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyRightArrow ? 0.6f : 0.4f);
+        glVertex2f(70.0f, 320.0f);
+        glVertex2f(70.0f, 370.0f);
+        glVertex2f(105.0f, 345.0f);
+        glEnd();
+        glBegin(GL_QUADS);
+        glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyRightArrow ? 0.6f : 0.4f);
+        glVertex2f(40.0f, 335.0f);
+        glVertex2f(70.0f, 335.0f);
+        glVertex2f(70.0f, 355.0f);
+        glVertex2f(40.0f, 355.0f);
+        glEnd();
+        glBegin(GL_TRIANGLES);
+        glColor4f(0.5f, 0.5f, 0.5f, thePlayer.flapping ? 0.6f : 0.4f);
+        glVertex2f(560.0f, 355.0f);
+        glVertex2f(585.0f, 320.0f);
+        glVertex2f(610.0f, 355.0f);
+        glEnd();
+        glBegin(GL_QUADS);
+        glColor4f(0.5f, 0.5f, 0.5f, thePlayer.flapping ? 0.6f : 0.4f);
+        glVertex2f(575.0f, 355.0f);
+        glVertex2f(595.0f, 355.0f);
+        glVertex2f(595.0f, 385.0f);
+        glVertex2f(575.0f, 385.0f);
+        glEnd();
+        glDisable(GL_BLEND);
+        #endif
+    }
 }

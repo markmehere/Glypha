@@ -80,7 +80,7 @@ static int getFingerId(long long value) {
 }
 
 static int getTouchRegion(int xpos, int ypos) {
-    if (ypos < 240 && xpos < 320) {
+    if (ypos < 305 && xpos < 320) {
         return 0;
     }
     else if (xpos < 320) {
@@ -271,18 +271,18 @@ static void update() {
                         switch (touchRegion) {
                             case 0:
                                 if (event.type == SDL_FINGERDOWN) {
-                                    game->handleKeyDownEvent(GL::Game::KeyRightArrow);
-                                }
-                                else {
-                                    game->handleKeyUpEvent(GL::Game::KeyRightArrow);
-                                }
-                                break;
-                            case 1:
-                                if (event.type == SDL_FINGERDOWN) {
                                     game->handleKeyDownEvent(GL::Game::KeyLeftArrow);
                                 }
                                 else {
                                     game->handleKeyUpEvent(GL::Game::KeyLeftArrow);
+                                }
+                                break;
+                            case 1:
+                                if (event.type == SDL_FINGERDOWN) {
+                                    game->handleKeyDownEvent(GL::Game::KeyRightArrow);
+                                }
+                                else {
+                                    game->handleKeyUpEvent(GL::Game::KeyRightArrow);
                                 }
                                 break;
                             case 2:
@@ -304,13 +304,13 @@ static void update() {
                     game->newGame();
                 }
                 if (not_playing && event.type == SDL_MOUSEBUTTONDOWN) {
-                    if (xpos >= 0 && ypos < 22 && xpos < 150) {
+                    if (xpos >= 0 && ypos < 52 && xpos < 150) {
                         game->showAbout();
                     }
-                    else if (xpos >= 150 && ypos < 22 && xpos < 300) {
+                    else if (xpos >= 150 && ypos < 52 && xpos < 300) {
                         /* no action */
                     }
-                    else if (xpos >= 300 && ypos < 22 && xpos < 450) {
+                    else if (xpos >= 300 && ypos < 52 && xpos < 450) {
                         game->showHighScores();
                     }
                     else {
@@ -324,7 +324,7 @@ static void update() {
                         #endif
                         game->pauseResumeGame();
                     }
-                    else if (game->paused() && ypos < 22 && xpos < 100) {
+                    else if (game->paused() && ypos < 100 && xpos < 100) {
                         game->endGame();
                     }
                 }

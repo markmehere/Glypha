@@ -33,6 +33,12 @@ Web:
 2. `emcc -v` to verify install
 3. `make webs` (requires `python3` to serve)
 
+Mobile:
+
+1. Install emscripten https://emscripten.org/
+2. `emcc -v` to verify install
+3. `make mobiles` (requires `python3` to serve)
+
 ### TODO
 
 * Use Metal on macOS? SpriteKit?
