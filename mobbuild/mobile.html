@@ -26,12 +26,6 @@
         background-color: #3d5269;
       }
 
-      #hsname {
-        font-size: 16pt;
-        padding: 8pt;
-        width: 400px;
-      }
-
       button {
         display: inline-block;
         font-size: 16pt;
@@ -73,6 +67,21 @@
         margin-top: 4px;
         width: 40px;
         background-color: #3d5269;
+      }
+
+      @media only screen and (max-height: 450px) {
+        button {
+          font-size: 12pt;
+          padding: 6pt;
+        }
+        
+        td {
+          padding: 1rem;
+        }
+
+        td.onethird {
+          padding: 0.33rem;
+        }
       }
     </style>
 </head>

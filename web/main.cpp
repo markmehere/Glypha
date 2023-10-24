@@ -319,12 +319,11 @@ static void update() {
                 }
                 else if (!not_playing && event.type == SDL_MOUSEBUTTONUP) {
                     if (xpos > 320 && xpos < 400 && ypos < 100) {
-                        #ifdef MOBILE
                         toggleAudio();
-                        #endif
                         game->pauseResumeGame();
                     }
                     else if (game->paused() && ypos < 100 && xpos < 100) {
+                        toggleAudio();
                         game->endGame();
                     }
                 }
