@@ -39,6 +39,14 @@ Mobile:
 2. `emcc -v` to verify install
 3. `make mobiles` (requires `python3` to serve)
 
+### Changelog
+
+2.0.1 - Initial OpenGL release
+2.0.2 - Initial web release
+2.0.3 - Initial mobile/gamepad release
+2.0.4 - Mobile/console fixes (better console detection; better end-of-game audio; larger mobile buttons) 
+
+
 ### TODO
 
 * Use Metal on macOS? SpriteKit?

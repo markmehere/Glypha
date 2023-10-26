@@ -65,7 +65,7 @@
       catch (e) {
         console.error(e);
       }
-      if (window.matchMedia('(any-hover: hover)').matches) {
+      if (window.forceNonMobile) {
         window.location.href = 'game.html';
       }
       else {
@@ -138,8 +138,28 @@
     }
 
     try {
+      if (navigator.userAgent.toLowerCase().indexOf('playstation') > -1 || navigator.userAgent.toLowerCase().indexOf('xbox') > -1) {
+        if (navigator.userAgent.toLowerCase().indexOf('portable') === -1 && navigator.userAgent.toLowerCase().indexOf('vita') === -1) {
+          window.forceNonMobile = true;
+        }
+      }
+
+      if (!('ontouchstart' in window)) {
+        window.forceNonMobile = true;
+      }
+
+      if (window.matchMedia('(any-hover: hover)').matches) {
+        window.forceNonMobile = true;
+      }
+    }
+    catch (e) {
+      console.error(e);
+    }
+
+    try {
       Controller.search();
       window.addEventListener('gc.button.press', function(event) {
+        window.forceNonMobile = true;
         const button = event.detail.name;
         if (button === 'FACE_1' || button === 'FACE_3') {
           submitForm(event);
@@ -148,6 +168,9 @@
           document.getElementById('hsname').value = generateName(true);
         }
       }, false);
+      window.addEventListener('gc.controller.found', function(event) {
+        window.forceNonMobile = true;
+      });
     }
     catch (e) {
       console.error(e);

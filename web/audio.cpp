@@ -225,6 +225,12 @@ void endAudio(void)
     free(gDevice);
 }
 
+void flushAudio(void)
+{
+    endAudio();
+    initAudio();
+}
+
 void pauseAudio(void)
 {
     doNotRestore = audioIsMuted;

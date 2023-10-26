@@ -125,6 +125,12 @@ void endAudio(void);
 void initAudio(void);
 
 /*
+ * Flushes Audio Device
+ *
+ */
+void flushAudio(void);
+
+/*
  * Pause/unpause audio from playing
  *
  */

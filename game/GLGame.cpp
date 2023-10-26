@@ -6,6 +6,7 @@
 #include <cstring>
 #ifdef EMSCRIPTEN
 #include <SDL2/SDL.h>
+#include "audio.h"
 #endif
 
 #define kIdle						-1	// enemy & player mode
@@ -505,6 +506,11 @@ void GL::Game::endGame()
     checkHighScore();
     sounds.play(kMusicSound);
     #else
+    int start = SDL_GetTicks();
+    SDL_WaitEventTimeout(NULL, 100);
+    SDL_Delay(start + 200 - SDL_GetTicks());
+    flushAudio();
+    SDL_Delay(start + 250 - SDL_GetTicks());
     if (!checkHighScore()) {
         sounds.play(kMusicSound);
     }

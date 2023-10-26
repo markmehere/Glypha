@@ -300,17 +300,17 @@ static void update() {
             case SDL_MOUSEBUTTONDOWN:
                 xpos = (int)((event.button.x - X_CORRECTION) * xscale);
                 ypos = (int)(event.button.y * yscale);
-                if (not_playing && event.type == SDL_MOUSEBUTTONUP && xpos >= 150 && ypos < 22 && xpos < 300) {
+                if (not_playing && event.type == SDL_MOUSEBUTTONUP && xpos >= 150 && ypos < 102 && xpos < 300) {
                     game->newGame();
                 }
                 if (not_playing && event.type == SDL_MOUSEBUTTONDOWN) {
-                    if (xpos >= 0 && ypos < 52 && xpos < 150) {
+                    if (xpos >= 0 && ypos < 102 && xpos < 150) {
                         game->showAbout();
                     }
-                    else if (xpos >= 150 && ypos < 52 && xpos < 300) {
+                    else if (xpos >= 150 && ypos < 102 && xpos < 300) {
                         /* no action */
                     }
-                    else if (xpos >= 300 && ypos < 52 && xpos < 450) {
+                    else if (xpos >= 300 && ypos < 102 && xpos < 450) {
                         game->showHighScores();
                     }
                     else {
