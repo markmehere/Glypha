@@ -141,15 +141,18 @@
       if (navigator.userAgent.toLowerCase().indexOf('playstation') > -1 || navigator.userAgent.toLowerCase().indexOf('xbox') > -1) {
         if (navigator.userAgent.toLowerCase().indexOf('portable') === -1 && navigator.userAgent.toLowerCase().indexOf('vita') === -1) {
           window.forceNonMobile = true;
+          console.log("Console device detected - mobile disabled");
         }
       }
 
       if (!('ontouchstart' in window)) {
         window.forceNonMobile = true;
+        console.log("Non-touch device detected - mobile disabled");
       }
 
-      if (window.matchMedia('(any-hover: hover)').matches) {
+      if (!window.matchMedia('(pointer: coarse)').matches) {
         window.forceNonMobile = true;
+        console.log("Fine pointer device - mobile disabled");
       }
     }
     catch (e) {
@@ -160,6 +163,7 @@
       Controller.search();
       window.addEventListener('gc.button.press', function(event) {
         window.forceNonMobile = true;
+        console.log("Game button pressed - mobile disabled");
         const button = event.detail.name;
         if (button === 'FACE_1' || button === 'FACE_3') {
           submitForm(event);
@@ -170,6 +174,7 @@
       }, false);
       window.addEventListener('gc.controller.found', function(event) {
         window.forceNonMobile = true;
+        console.log("Game controller detected - mobile disabled");
       });
     }
     catch (e) {
