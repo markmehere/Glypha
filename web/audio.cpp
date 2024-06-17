@@ -88,6 +88,7 @@ static uint32_t gSoundCount;
 
 bool audioIsMuted = false;
 bool doNotRestore = false;
+uint32_t onlyMusic = 0;
 
 /*
  * Add a music to the queue, addAudio wrapper for music due to fade
@@ -129,25 +130,29 @@ static inline void audioCallback(void * userdata, uint8_t * stream, int len);
 
 void playSound(const char * filename, int volume)
 {
-		if (audioIsMuted) return;
+	if (audioIsMuted) return;
     playAudio(filename, NULL, 0, volume);
 }
 
 void playMusic(const char * filename, int volume)
 {
-		if (audioIsMuted) return;
+	if (audioIsMuted) return;
     playAudio(filename, NULL, 1, volume);
 }
 
-void playSoundFromMemory(Audio * audio, int volume)
+void playSoundFromMemory(Audio * audio, int volume, bool isMusic, int which)
 {
-		if (audioIsMuted) return;
+	if (audioIsMuted) return;
+    if (!isMusic && onlyMusic && SDL_GetTicks() - onlyMusic < 700) {
+        SDL_Log("Other sound blocked %d", which);
+        return;
+    }
     playAudio(NULL, audio, 0, volume);
 }
 
 void playMusicFromMemory(Audio * audio, int volume)
 {
-		if (audioIsMuted) return;
+	if (audioIsMuted) return;
     playAudio(NULL, audio, 1, volume);
 }
 
@@ -229,6 +234,15 @@ void flushAudio(void)
 {
     endAudio();
     initAudio();
+}
+
+void setOnlyMusic(void)
+{
+    onlyMusic = SDL_GetTicks();
+    Audio *global = (Audio *)((gDevice->want).userdata);
+    SDL_Log("Other sounds suspended %s", global->next ? "(more)" : "(done)"  );
+    freeAudio(global->next);
+    global->next = NULL;
 }
 
 void pauseAudio(void)

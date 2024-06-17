@@ -506,11 +506,6 @@ void GL::Game::endGame()
     checkHighScore();
     sounds.play(kMusicSound);
     #else
-    int start = SDL_GetTicks();
-    SDL_WaitEventTimeout(NULL, 100);
-    SDL_Delay(start + 200 - SDL_GetTicks());
-    flushAudio();
-    SDL_Delay(start + 250 - SDL_GetTicks());
     if (!checkHighScore()) {
         sounds.play(kMusicSound);
     }
@@ -959,6 +954,9 @@ void GL::Game::handlePlayerSinking()
 {
     thePlayer.hVel = 0;
     thePlayer.vVel = 16;
+    #ifdef EMSCRIPTEN
+    if (thePlayer.dest.top + 4 == kLavaHeight && livesLeft == 1) setOnlyMusic();
+    #endif
     if (thePlayer.dest.top > kLavaHeight) {
         offAMortal();
     }
@@ -1045,6 +1043,9 @@ void GL::Game::handlePlayerBones()
 {
     if (evenFrame) {
         thePlayer.frame--;
+        #ifdef EMSCRIPTEN
+        if (thePlayer.frame == 4 && livesLeft == 1) setOnlyMusic();
+        #endif
         if (thePlayer.frame == 0) {
             offAMortal();
         } else {

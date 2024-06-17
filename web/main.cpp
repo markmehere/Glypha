@@ -461,11 +461,11 @@ EM_JS(char*, GetPlayerName, (), {
 });
 
 static void saveScore(const char *ignore, int place, void *context) {
-    SDL_WaitEventTimeout(NULL, 100);
+    SDL_Delay(100);
     char *namePointer = GetPlayerName();
     game->processHighScoreName(namePointer, place);
     free(namePointer);
-    SDL_WaitEventTimeout(NULL, 750);
+    SDL_Delay(250);
     game->conclude();
 }
 

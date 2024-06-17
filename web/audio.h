@@ -73,6 +73,12 @@ Audio * createAudio(const char * filename, uint8_t loop, int volume);
  */
 void freeAudio(Audio * audio);
 
+/**
+ * Suspends other sounds from beginning play other than music
+ * 
+ */
+void setOnlyMusic();
+
 /*
  * Play a wave file currently must be S16LE format 2 channel stereo
  *
@@ -96,10 +102,12 @@ void playMusic(const char * filename, int volume);
  * Advantage to this method is no more disk reads, only once, data is stored and constantly reused
  *
  * @param audio         Audio object to clone and use
- * @param volume        Volume read playSound for moree
- *
+ * @param volume        Volume read playSound for more
+ * @param isMusic       Custom value used for Glypha only
+ * @param which         Used for debugging
+ * 
  */
-void playSoundFromMemory(Audio * audio, int volume);
+void playSoundFromMemory(Audio * audio, int volume, bool isMusic, int which);
 
 /*
  * Plays a music from a createAudio object (clones), only 1 at a time plays

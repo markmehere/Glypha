@@ -18,7 +18,7 @@ void GL::Sounds::play(int which)
     ctx->hasLoaded = true;
   }
   const GL::WaveData *data = &ctx->wavs[which];
-  playSoundFromMemory(data->audio, SDL_MIX_MAXVOLUME);
+  playSoundFromMemory(data->audio, SDL_MIX_MAXVOLUME, which == kMusicSound, which);
 }
 
 void GL::Sounds::load(int which, const unsigned char *buf, unsigned bufLen)
