@@ -152,7 +152,7 @@
 
       if (!window.matchMedia('(pointer: coarse)').matches) {
         window.forceNonMobile = true;
-        console.log("Fine pointer device - mobile disabled");
+        console.log("Coarse pointer device - mobile disabled");
       }
     }
     catch (e) {
@@ -162,13 +162,14 @@
     try {
       Controller.search();
       window.addEventListener('gc.button.press', function(event) {
+       	event.preventDefault();
         window.forceNonMobile = true;
         console.log("Game button pressed - mobile disabled");
         const button = event.detail.name;
-        if (button === 'FACE_1' || button === 'FACE_3') {
+        if (button === 'FACE_1' || button === 'FACE_3' || button === 'MISCBUTTON_1' || button === 'MISCBUTTON_3') {
           submitForm(event);
         }
-        else if (button === 'FACE_2' || button === 'FACE_4') {
+        else if (button === 'FACE_2' || button === 'FACE_4' || button === 'MISCBUTTON_2' || button === 'MISCBUTTON_4') {
           document.getElementById('hsname').value = generateName(true);
         }
       }, false);
