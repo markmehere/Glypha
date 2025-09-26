@@ -1,5 +1,5 @@
 .DS_Store
-build*
+build
 .vscode
 CMakeFiles
 
@@ -17,5 +17,15 @@ mobbuild/Makefile
 mobbuild/icon.png
 mobbuild/index.html
 
+gl4es
+
 glypha-iii.zip
 glypha-iii
+
+.gradle
+.idea
+.kotlin
+.cxx
+
+android/app/src/main/cpp/resources
+android/app/src/main/cpp/game

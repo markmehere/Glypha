@@ -195,7 +195,7 @@ void AppController::gameThread()
 {
     (void)wglMakeCurrent(GetDC(win), hRC);
 
-    game = new GL::Game(gameCallback, highScoreNameCallback, this);
+    game = new GL::Game(gameCallback, highScoreNameCallback, this, nullptr);
 
     RECT r;
     (void)GetClientRect(win, &r);

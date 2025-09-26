@@ -6,11 +6,12 @@ This is a port of Glypha III from its Mac OS/QuickDraw version (1995) to modern 
 
 ### Build
 
-([CMake](https://cmake.org) 3.1+ is required)
+([CMake](https://cmake.org) 3.5+ is required)
 
 macOS:
 
 1. `make game`
+2. `open build/Glypha\ III.app`
 
 Windows:
 
@@ -39,17 +40,19 @@ Mobile:
 2. `emcc -v` to verify install
 3. `make mobiles` (requires `python3` to serve)
 
+Android:
+
+1. `make android`
+2. Load `android/app/build/outputs/apk/release/glypha-iii-release-unsigned.apk` to your phone
+
 ### Changelog
 
 2.0.1 - Initial OpenGL release
 2.0.2 - Initial web release
 2.0.3 - Initial mobile/gamepad release
-2.0.4 - Mobile/console fixes (better console detection; better end-of-game audio; larger mobile buttons) 
-
-
-### TODO
-
-* Use Metal on macOS? SpriteKit?
+2.0.4 - Mobile/console fixes (better console detection; better end-of-game audio; larger mobile buttons)
+2.0.5 - Mobile detection, sound and timing fixes
+2.2.0 - Initial Android release
 
 ### Links
 

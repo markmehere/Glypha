@@ -12,8 +12,10 @@ class Font {
 public:
     
     Font(const unsigned char* buf, size_t bufLen);
-    
+
     void drawText(const char *text, int x, int y, const Image& img) const;
+
+    void drawBigText(const char *text, int x, int y, float zoom, const Image& img) const;
     
     int measureText(const char *text) const;
     

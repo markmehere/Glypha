@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 
 set(EXE_NAME "Glypha III")
 string(TOLOWER "${EXE_NAME}" EXE_LOWER)
@@ -8,8 +8,8 @@ set(EXE_IDENTIFIER "com.kainjow.${EXE_NAME_NOSPACES}")
 project(Glypha)
 
 set(CPACK_PACKAGE_VERSION_MAJOR "2")
-set(CPACK_PACKAGE_VERSION_MINOR "0")
-set(CPACK_PACKAGE_VERSION_PATCH "5")
+set(CPACK_PACKAGE_VERSION_MINOR "2")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
 
 find_package(PNG REQUIRED)
 find_package(SDL2 REQUIRED)
@@ -19,6 +19,8 @@ include_directories(${PNG_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS} ${SDL_IMAGE_INCLUDE_
 
 set(SOURCES
   ../game/GLGlobals.h
+  ../game/GLMenu.cpp
+  ../game/GLMenu.h
   ../game/GLGame.cpp
   ../game/GLGame.h
   ../game/GLImage_libpng.cpp
@@ -47,6 +49,7 @@ set(SOURCES
   ../web/audio.cpp
   ../web/audio.h
   ../web/main.cpp
+  ../build/resources/birdback_png.cpp
   ../build/resources/enemyFly_png.cpp
   ../build/resources/enemyWalk_png.cpp
   ../build/resources/background_png.cpp
@@ -84,13 +87,13 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${EXE_NAME_NOSPACES})
 
-target_include_directories(${PROJECT_NAME} PRIVATE ../game ../web gl4es/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ../game ../web ../gl4es/include)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE "GL_GAME_NAME=\"Glypha III\""
   "GL_GAME_VERSION=\"${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}\"")
 
 target_link_libraries(${PROJECT_NAME}
-    ${CMAKE_CURRENT_SOURCE_DIR}/gl4es/lib/libGL.a
+    ${CMAKE_CURRENT_SOURCE_DIR}/../gl4es/lib/libGL.a
     "-sUSE_LIBPNG"
     "-sUSE_SDL=2"
     "-sUSE_SDL_IMAGE=2"

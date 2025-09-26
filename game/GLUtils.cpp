@@ -12,11 +12,11 @@ GL::Utils::Utils()
     mach_timebase_info_data_t timebaseInfo;
     (void)mach_timebase_info(&timebaseInfo);
     mach_convert = ((double)timebaseInfo.numer / (double)timebaseInfo.denom) / NSEC_PER_SEC;
-#elif _WIN32
+#elif defined(_WIN32)
     (void)QueryPerformanceFrequency(&freq);
 #endif
     
-#if _WIN32
+#if defined(_WIN32)
     srand(unsigned(time(nullptr)));
 #else
     srandom((unsigned)time(NULL));
@@ -40,7 +40,7 @@ double GL::Utils::now() const
     LARGE_INTEGER t;
     (void)QueryPerformanceCounter(&t);
     return (double)t.QuadPart / (double)freq.QuadPart;
-#elif __APPLE__
+#elif defined(__APPLE__)
     return mach_absolute_time() * mach_convert;
 #else
 	struct timespec t;

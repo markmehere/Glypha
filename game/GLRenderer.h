@@ -3,6 +3,7 @@
 
 #include "GLRect.h"
 #include "GLPoint.h"
+#include "GLImage.h"
 
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
@@ -32,10 +33,16 @@ public:
     void endLines();
     void moveTo(int h, int v);
     void lineTo(int h, int v);
+
+    void beginOutside();
+    void endOutside();
     
     Rect bounds();
+
+    void unload();
     
 private:
+    Image birdBackImg;
     Rect bounds_;
     bool didPrepare_;
     Point lineStart_;

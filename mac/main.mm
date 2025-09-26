@@ -120,7 +120,7 @@ static void highScoreNameCallback(const char *highName, int place, void *context
         gameView_ = [[GameView alloc] initWithFrame:[[window_ contentView] frame]];
         [[window_ contentView] addSubview:gameView_];
         [self setupMenuBar:appName];
-        game_ = new GL::Game(callback, highScoreNameCallback, self);
+        game_ = new GL::Game(callback, highScoreNameCallback, self, NULL);
         [gameView_ setGame:game_];
     }
     return self;

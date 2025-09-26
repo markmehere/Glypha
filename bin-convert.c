@@ -8,9 +8,11 @@ int main(int argc, const char *argv[]) {
 	const char *nmspace = "GL";
 	const char *filename;
 	char variable[1024];
-	size_t i;
+	size_t i, j;
 	int num_bytes = 0;
 	int column = 0;
+	int suspend = 0;
+	int initial_strlen = 0;
 	const int bytes_per_column = 12;
 
 	if (argc != 3) {
@@ -46,9 +48,19 @@ int main(int argc, const char *argv[]) {
 	} else {
 		memcpy(variable, in_path, strlen(in_path) + 1);
 	}
-	for (i = 0; i < strlen(variable); ++i) {
+	j = 0;
+	initial_strlen = strlen(variable) + 1;
+	for (i = 0; i < initial_strlen; ++i) {
+		if (variable[i] == '_') {
+			suspend = 1;
+		}
 		if (variable[i] == '.') {
+			suspend = 0;
 			variable[i] = '_';
+		}
+		if (!suspend) {
+			variable[j] = variable[i];
+			++j;
 		}
 	}
 	

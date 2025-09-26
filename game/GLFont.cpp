@@ -117,6 +117,22 @@ void GL::Font::drawText(const char *text, int x, int y, const Image& img) const
     }
 }
 
+void GL::Font::drawBigText(const char *text, int x, int y, float zoom, const Image& img) const
+{
+    const size_t len = strlen(text);
+    int pos_x = x;
+    int pos_y = y;
+    float rzoom = zoom * 2.0f;
+    for (size_t i = 0; i < len; ++i) {
+        const int char_id = safe_char_id(text[i]);
+        const int index = static_cast<int>(char_id - first_char_);
+        const Char& ch = chars_.at(static_cast<size_t>(index));
+        GL::Rect dest(pos_x + (int)((float)ch.xoffset * rzoom), pos_y + /*base_ +*/ (int)((float)ch.yoffset * rzoom), (int)((float)ch.width * rzoom), (int)((float)ch.height * rzoom));
+        img.draw(dest, Rect(ch.x, ch.y, ch.width, ch.height));
+        pos_x += (int)((float)ch.xadvance * rzoom);
+    }
+}
+
 int GL::Font::measureText(const char *text) const
 {
     int width = 0;

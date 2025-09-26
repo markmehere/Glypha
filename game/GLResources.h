@@ -5,6 +5,8 @@ namespace GL {
 
 extern unsigned char background_png[];
 extern unsigned int background_png_len;
+extern unsigned char birdback_png[];
+extern unsigned int birdback_png_len;
 extern unsigned char torches_png[];
 extern unsigned int torches_png_len;
 extern unsigned char player_png[];

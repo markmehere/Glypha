@@ -12,10 +12,41 @@
 #include <stdlib.h>
 #include <SDL2/SDL.h>
 #endif
+#ifdef __ANDROID__
+#include <game-activity/native_app_glue/android_native_app_glue.h>
+#include "AndroidOut.h"
+#include <fstream>
+extern struct android_app *gAndroidApp;
+#endif
 
 bool GL::Prefs::load(PrefsInfo& thePrefs)
 {
-#ifdef GLYPHA_QT
+#ifdef __ANDROID__
+    if (!gAndroidApp || !gAndroidApp->activity || !gAndroidApp->activity->internalDataPath) {
+        aout <<  "Android app context not available for loading prefs!!!" << true << std::endl;
+        return false;
+    }
+    std::string filePath = std::string(gAndroidApp->activity->internalDataPath) + "/glypha_prefs.dat";
+    aout << "Loading prefs from: " << filePath << std::endl;
+
+    std::ifstream file(filePath, std::ios::binary | std::ios::in);
+    if (!file.is_open()) {
+        aout << "Failed to open prefs file for reading" << std::endl;
+        return false;
+    }
+
+    file.read(reinterpret_cast<char*>(&thePrefs), sizeof(PrefsInfo));
+    if (file.gcount() != sizeof(PrefsInfo)) {
+        aout << "Failed to read correct size from prefs file. Read " << (int)file.gcount() << " expected " << (int)sizeof(PrefsInfo) << std::endl;
+        file.close();
+        return false;
+    }
+
+    file.close();
+    aout << "Prefs loaded successfully" << std::endl;
+
+    return true;
+#elif GLYPHA_QT
     QSettings settings;
     QByteArray data = settings.value("prefs", QByteArray()).toByteArray();
     if (data.size() != sizeof(thePrefs)) {
@@ -62,14 +93,31 @@ bool GL::Prefs::load(PrefsInfo& thePrefs)
     }
     return false;
 #else
-    (void)thePrefs;
     return false;
 #endif
 }
 
 void GL::Prefs::save(const PrefsInfo& thePrefs)
 {
-#ifdef GLYPHA_QT
+#ifdef __ANDROID__
+    if (!gAndroidApp || !gAndroidApp->activity || !gAndroidApp->activity->internalDataPath) {
+        aout <<  "Android app context not available for saving prefs" << std::endl;
+        return;
+    }
+    std::string filePath = std::string(gAndroidApp->activity->internalDataPath) + "/glypha_prefs.dat";
+    std::ofstream file(filePath, std::ios::binary | std::ios::out | std::ios::trunc);
+    if (!file.is_open()) {
+        aout << "Failed to open prefs file for writing" << std::endl;
+        return;
+    }
+    file.write(reinterpret_cast<const char*>(&thePrefs), sizeof(PrefsInfo));
+    if (file.fail()) {
+        aout << "Failed to write all data to prefs file" << std::endl;
+    } else {
+        aout << "Prefs saved successfully" << std::endl;
+    }
+    file.close();
+#elif GLYPHA_QT
     QSettings settings;
     settings.setValue("prefs", QByteArray((const char*)&thePrefs, sizeof(thePrefs)));
 #elif defined(__APPLE__)

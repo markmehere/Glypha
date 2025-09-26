@@ -10,7 +10,7 @@ void GL::Sounds::initContext()
   context = new Context;
 }
 
-void GL::Sounds::play(int which)
+void GL::Sounds::play(int which, int where)
 {
   Context *ctx = static_cast<Context*>(context);
   if (!ctx->hasLoaded) {

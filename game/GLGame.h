@@ -1,7 +1,6 @@
 #ifndef GLGAME_H
 #define GLGAME_H
 
-#include "GLRect.h"
 #include "GLPoint.h"
 #include "GLRenderer.h"
 #include "GLImage.h"
@@ -10,62 +9,11 @@
 #include "GLUtils.h"
 #include "GLFont.h"
 #include "GLPrefs.h"
-#ifdef _WIN32
-#else
-#include <pthread.h>
-#endif
+#include "GLMenu.h"
+#include "GLGameLock.h"
+#include "GLGameState.h"
 
 namespace GL {
-
-class Lock {
-#ifdef _WIN32
-public:
-    Lock() {
-        InitializeCriticalSection(&lock_);
-    }
-    ~Lock() {
-        DeleteCriticalSection(&lock_);
-    }
-    void lock() {
-        EnterCriticalSection(&lock_);
-    }
-    void unlock() {
-        LeaveCriticalSection(&lock_);
-    }
-private:
-    CRITICAL_SECTION lock_;
-#else
-public:
-    Lock() {
-        pthread_mutex_init(&mutex_, NULL);
-    }
-    ~Lock() {
-        pthread_mutex_destroy(&mutex_);
-    }
-    void lock() {
-        pthread_mutex_lock(&mutex_);
-    }
-    void unlock() {
-        pthread_mutex_unlock(&mutex_);
-    }
-private:
-    pthread_mutex_t mutex_;
-#endif
-};
-
-class Locker {
-public:
-    Locker(Lock& lock)
-        : lock_(lock)
-    {
-        lock_.lock();
-    }
-    ~Locker() {
-        lock_.unlock();
-    }
-private:
-    Lock& lock_;
-};
 
 #define kNumLightningPts 8
 #define kMaxEnemies 8
@@ -96,12 +44,15 @@ public:
     typedef void (*Callback)(Event event, void *context);
     typedef void (*HighScoreNameCallback)(const char *name, int place, void *context);
 
-    Game(Callback callback, HighScoreNameCallback highScoreCallback, void *context);
+    Game(Callback callback, HighScoreNameCallback highScoreCallback, void *context, GameState *appState);
     ~Game();
     
     Renderer* renderer();
     
     void run();
+
+    GameState gameState();
+    void sleep();
     
     void handleMouseDownEvent(const Point& point);
 
@@ -113,6 +64,7 @@ public:
     bool paused() const;
     void endGame();
     void showHelp();
+    void scrollHelpOrClose();
     void showHighScores();
     void resetHighScores();
     void showAbout();
@@ -124,7 +76,16 @@ public:
     void conclude();
     void showKeyboardWarn();
 
+    Menu *menu();
+
     bool playing;
+    bool aboutVisible;
+    enum WallMode {
+        kWallModeNone = 0,
+        kWallModeHelp = 1,
+        kWallModeHighScores = 2,
+    };
+    WallMode wallMode;
     
 private:
     Callback callback_;
@@ -132,6 +93,7 @@ private:
     void *callbackContext_;
     
     Renderer *renderer_;
+    Menu *menu_;
     Cursor cursor;
     Sounds sounds;
     Utils utils;
@@ -163,7 +125,6 @@ private:
     void drawLightning() const;
     void doLightning(const Point& point, int count);
     Point leftLightningPts[kNumLightningPts], rightLightningPts[kNumLightningPts];
-    Point mousePoint;
     int lightningCount;
     double lastLightningStrike;
     Point lightningPoint;
@@ -173,20 +134,8 @@ private:
     Image obelisksImg;
     bool flashObelisks;
     void drawObelisks() const;
-    
     int numLedges, levelOn, livesLeft;
-    
-    struct Player {
-        Rect dest, wasDest, wrap;
-        int h, v;
-        int wasH, wasV;
-        int hVel, vVel;
-        int srcNum, mode;
-        int frame;
-        bool facingRight, flapping;
-        bool walking, wrapping;
-        bool clutched;
-    } thePlayer;
+    Player thePlayer;
     Rect playerRects[11];
     void resetPlayer(bool initialPlace);
     void offAMortal();
@@ -215,8 +164,7 @@ private:
     Rect platformCopyRects[9];
     void drawPlatforms() const;
     Image platformImg;
-    
-    int score_;
+    int score;
     Image numbersImg;
     Rect numbersSrc[11], numbersDest[11];
     void drawLivesNumbers() const;
@@ -242,22 +190,11 @@ private:
     int deadEnemies;
     int numOwls;
     int spawnedEnemies;
-    struct Enemy {
-        Rect dest, wasDest;
-        int h, v;
-        int wasH, wasV;
-        int hVel, vVel;
-        int srcNum, mode;
-        int kind, frame;
-        int heightSmell, targetAlt;
-        int flapImpulse, pass;
-        int maxHVel, maxVVel;
-        bool facingRight;
-    } theEnemies[kMaxEnemies];
+    Enemy theEnemies[kMaxEnemies];
     Rect enemyInitRects[5];
     Rect eggSrcRect;
-    bool doEnemyFlapSound;
-	bool doEnemyScrapeSound;
+    int doEnemyFlapSound;
+	int doEnemyScrapeSound;
     Image enemyFly;
     Image enemyWalk;
     Image egg;
@@ -309,12 +246,6 @@ private:
         kWallOpen = 2,
     };
     WallState wallState;
-    enum WallMode {
-        kWallModeNone = 0,
-        kWallModeHelp = 1,
-        kWallModeHighScores = 2,
-    };
-    WallMode wallMode;
     int helpPos;
     
     void resetWall();
@@ -345,9 +276,8 @@ private:
     void readInPrefs();
 
     Image aboutImg;
-    bool aboutVisible;
     void drawAbout(Renderer *r) const;
-    void drawMenu(Renderer *r) const;
+    void drawBanner(Renderer *r) const;
 
     Prefs prefs_;
 };

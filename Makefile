@@ -31,19 +31,21 @@ qt_xcode:
 clean:
 	rm -rf build*
 	rm -rf webbuild/CMakeFiles
-	rm webbuild/CMakeCache.txt
-	rm webbuild/Makefile
-	rm webbuild/cmake_install.cmake
-	rm webbuild/glypha_iii*
-	rm -rf webbuild/gl4es/build
+	rm -f webbuild/CMakeCache.txt
+	rm -f webbuild/Makefile
+	rm -f webbuild/cmake_install.cmake
+	rm -f webbuild/glypha_iii*
+	rm -rf gl4es/build
+	rm -rf android/app/.cxx
+	rm -rf android/app/build
 
-webbuild/gl4es/include/GL/gl.h:
-	git clone https://github.com/ptitSeb/gl4es.git webbuild/gl4es
+gl4es/include/GL/gl.h:
+	git clone https://github.com/ptitSeb/gl4es.git gl4es
 
-webbuild/gl4es/lib/libGL.a: webbuild/gl4es/include/GL/gl.h
-	mkdir -p webbuild/gl4es/build
-	cd webbuild/gl4es/build && emcmake cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNOX11=ON -DNOEGL=ON -DSTATICLIB=ON
-	cd webbuild/gl4es/build && make
+gl4es/lib/libGL.a: gl4es/include/GL/gl.h
+	mkdir -p gl4es/build
+	cd gl4es/build && emcmake cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNOX11=ON -DNOEGL=ON -DSTATICLIB=ON
+	cd gl4es/build && make
 
 mobbuild/icon.png:
 	cp ./webbuild/icon.png mobbuild/icon.png
@@ -51,8 +53,20 @@ mobbuild/icon.png:
 mobbuild/index.html:
 	cp ./webbuild/index.html mobbuild/index.html
 
+android/app/src/main/cpp/game:
+	rm -f android/app/src/main/cpp/game
+	ln -s ../../../../../game android/app/src/main/cpp/game
+
+android/app/src/main/cpp/gl4es: gl4es/include/GL/gl.h
+	rm -f android/app/src/main/cpp/gl4es
+	ln -s ../../../../../gl4es android/app/src/main/cpp/gl4es
+	
+android/app/src/main/cpp/resources: game
+	rm -f android/app/src/main/cpp/resources
+	ln -s ../../../../../build/resources android/app/src/main/cpp/resources
+
 .PHONY: web
-web: game webbuild/gl4es/lib/libGL.a
+web: game gl4es/lib/libGL.a
 	cd webbuild && emcmake cmake -DCMAKE_BUILD_TYPE=Release .
 	cd webbuild && cmake --build . --config Release
 
@@ -61,7 +75,7 @@ webs: web
 	cd webbuild && python3 -m http.server
 
 .PHONY: mobile
-mobile: game webbuild/gl4es/lib/libGL.a mobbuild/icon.png mobbuild/index.html
+mobile: game gl4es/lib/libGL.a mobbuild/icon.png mobbuild/index.html
 	cd mobbuild && emcmake cmake -DCMAKE_BUILD_TYPE=Release .
 	cd mobbuild && cmake --build . --config Release
 
@@ -83,3 +97,7 @@ publish: mobile web
 	cp webbuild/index.html glypha-iii
 	cp webbuild/controller.min.js glypha-iii
 	zip -vr glypha-iii.zip glypha-iii/ -x "*.DS_Store"
+
+.PHONY: android
+android: android/app/src/main/cpp/game android/app/src/main/cpp/gl4es android/app/src/main/cpp/resources
+	cd android && ./gradlew build

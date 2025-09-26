@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/splash_background"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/headingLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="Glypha III"
+        android:textColor="@color/material_dynamic_neutral90"
+        android:textSize="34sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/subheadingLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Please enter your name for high scores..."
+        android:textColor="@color/material_dynamic_neutral90" />
+
+    <EditText
+        android:id="@+id/nameField"
+        android:layout_width="wrap_content"
+        android:layout_height="52dp"
+        android:layout_marginVertical="6dp"
+        android:width="348sp"
+        android:ems="10"
+        android:inputType="text"
+        android:maxLength="16"
+        android:text="Name"
+        android:textColor="@color/material_dynamic_neutral90"
+        android:textStyle="bold" />
+
+    <Switch
+        android:id="@+id/touchSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_marginVertical="8dp"
+        android:switchPadding="8dp"
+        android:text="Show on-screen touch controls"
+        android:textColor="@color/material_dynamic_neutral90" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/launchButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="5dp"
+            android:text="Let's play!" />
+
+        <Button
+            android:id="@+id/randomizeButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="5dip"
+            android:text="Randomize" />
+    </LinearLayout>
+
+</LinearLayout>

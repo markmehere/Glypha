@@ -2,8 +2,11 @@
 #define GL_DATATOWAVE_H
 
 #include <stdint.h>
-#ifdef EMSCRIPTEN
+
+#if defined(EMSCRIPTEN)
 #include "audio.h"
+#elif defined(__ANDROID__)
+typedef void *Audio;
 #else
 #include <QAudioFormat>
 #endif
@@ -11,10 +14,10 @@
 namespace GL {
 
     struct WaveData {
-#ifndef EMSCRIPTEN
-        QAudioFormat format;
-#else
+#if defined(EMSCRIPTEN) || defined(__ANDROID__)
         Audio *audio;
+#else
+        QAudioFormat format;
 #endif
         uint16_t numChannels;
         uint32_t numSampleFrames;

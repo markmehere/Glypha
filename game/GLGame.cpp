@@ -63,23 +63,50 @@
 
 #define kUpdateFreq (1.0/30.0)
 
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(__ANDROID__)
 extern bool audioIsMuted;
-static bool prefLoaded = false;
 #endif
+
+static bool prefLoaded = false;
 
 #ifdef EMSCRIPTEN
 extern SDL_GameController *controller;
 #endif
 
+#ifdef __ANDROID__
+#include "AndroidOut.h"
+bool controller = true;
+extern bool gTouchEnabled;
+#endif
+
+#ifndef __ANDROID__
+#ifdef MOBILE
+bool gTouchEnabled = true;
+#else
+bool gTouchEnabled = false;
+#endif
+#endif
+
+
+#ifndef GL_GAME_NAME
+#define GL_GAME_NAME "Glypha III"
+#endif
+
+#ifndef GL_GAME_VERSION
+#define GL_GAME_VERSION "2.2.0"
+#endif
+
 static int lastPlaceChanged = -1;
 
-GL::Game::Game(Callback callback, HighScoreNameCallback highScoreCallback, void *context)
+GL::Game::Game(Callback callback, HighScoreNameCallback highScoreCallback, void *context, GameState *gameState)
     : playing(false)
+    , aboutVisible(false)
+    , wallMode(kWallModeNone)
     , callback_(callback)
     , highScoreCallback_(highScoreCallback)
     , callbackContext_(context)
     , renderer_(new Renderer())
+    , menu_(new Menu())
     , now(utils.now())
     , lastTime(now)
     , accumulator(0)
@@ -94,11 +121,9 @@ GL::Game::Game(Callback callback, HighScoreNameCallback highScoreCallback, void 
     , flashObelisks(false)
     , keys_(KeyNone)
     , wallState(kWallClosed)
-    , wallMode(kWallModeNone)
     , font11(font11_fnt, font11_fnt_len)
     , highScoresTitle(GL_GAME_NAME " High Scores")
     , highScoresTitleWidth(font11.measureText(highScoresTitle))
-    , aboutVisible(false)
 {
     warnFrame.set(100, 20, 230, 36);
     warnBody.set(102, 22, 228, 34);
@@ -221,14 +246,73 @@ GL::Game::Game(Callback callback, HighScoreNameCallback highScoreCallback, void 
     font11Img.setAllowColorBlending(true);
     memset(fps_buf, 0, sizeof(fps_buf));
 
-#ifndef EMSCRIPTEN
+#if !defined(EMSCRIPTEN) && !defined(__ANDROID__)
     readInPrefs();
 #endif
+
+    if (gameState != nullptr) {
+        thePlayer = gameState->player;
+        memcpy(&theEnemies, &gameState->enemies, sizeof(Enemy) * kMaxEnemies);
+        score = gameState->score;
+        numLedges = gameState->numLedges;
+        levelOn = gameState->levelOn;
+        livesLeft = gameState->livesLeft;
+        numEnemies = gameState->numEnemies;
+        numEnemiesThisLevel = gameState->numEnemiesThisLevel;
+        deadEnemies = gameState->deadEnemies;
+        numOwls = gameState->numOwls;
+        spawnedEnemies = gameState->spawnedEnemies;
+        playing = true;
+        pausing = true;
+        if (!prefLoaded) {
+            readInPrefs();
+            prefLoaded = true;
+        }
+    }
 }
 
 GL::Game::~Game()
 {
     delete renderer_;
+    delete menu_;
+}
+
+void GL::Game::sleep() {
+    renderer_->unload();
+    bgImg.unload();
+    torchesImg.unload();
+    platformImg.unload();
+    playerImg.unload();
+    playerIdleImg.unload();
+    numbersImg.unload();
+    handImg.unload();
+    obelisksImg.unload();
+    enemyFly.unload();
+    enemyWalk.unload();
+    egg.unload();
+    eyeImg.unload();
+    helpImg.unload();
+    font11Img.unload();
+    aboutImg.unload();
+}
+
+GameState GL::Game::gameState()
+{
+    GameState state;
+
+    state.player = thePlayer;
+    memcpy(state.enemies, theEnemies, sizeof(Enemy) * kMaxEnemies);
+    state.score = score;
+    state.numLedges = numLedges;
+    state.levelOn = levelOn;
+    state.livesLeft = livesLeft;
+    state.numEnemies = numEnemies;
+    state.numEnemiesThisLevel = numEnemiesThisLevel;
+    state.deadEnemies = deadEnemies;
+    state.numOwls = numOwls;
+    state.spawnedEnemies = spawnedEnemies;
+
+    return state;
 }
 
 GL::Renderer* GL::Game::renderer()
@@ -309,6 +393,12 @@ void GL::Game::update()
     evenFrame = !evenFrame;
 }
 
+
+GL::Menu *GL::Game::menu() {
+    if (playing) return nullptr;
+    return menu_;
+}
+
 void GL::Game::drawFrame() const
 {
     Renderer *r = renderer_;
@@ -326,8 +416,15 @@ void GL::Game::drawFrame() const
         drawScoreNumbers();
         drawLevelNumbers();
     }
-#ifdef EMSCRIPTEN
-    drawMenu(r);
+#ifdef __ANDROID__
+    if (!playing) {
+        menu_->draw(
+                Point(renderer_->bounds().right - 400, renderer_->bounds().bottom - 600),
+                renderer_, &font11, &font11Img);
+    }
+#endif
+#if defined(EMSCRIPTEN) || defined(__ANDROID__)
+    drawBanner(r);
 #endif
     drawHelp();
     drawHighScores();
@@ -397,9 +494,9 @@ void GL::Game::handleLightning()
 void GL::Game::doLightning(const GL::Point& point, int count)
 {
     flashObelisks = true;
-    sounds.play(kLightningSound);
     lightningCount = count;
     lightningPoint = point;
+    sounds.play(kLightningSound, lightningPoint.h);
     generateLightning(lightningPoint.h, lightningPoint.v);
     lastLightningStrike = now;
 }
@@ -457,7 +554,7 @@ void GL::Game::drawLightning() const
 
 void GL::Game::newGame()
 {
-#ifdef EMSCRIPTEN
+#if EMSCRIPTEN || defined(__ANDROID__)
     if (!prefLoaded) {
         readInPrefs();
         prefLoaded = true;
@@ -469,7 +566,7 @@ void GL::Game::newGame()
 	numLedges = 3;
 	levelOn = 0;
     livesLeft = kInitNumLives;
-    score_ = 0L;
+    score = 0L;
     playing = true;
     pausing = false;
     numOwls = 4;
@@ -502,13 +599,13 @@ bool GL::Game::paused() const
 void GL::Game::endGame()
 {
     playing = false;
-    #ifndef EMSCRIPTEN
-    checkHighScore();
-    sounds.play(kMusicSound);
-    #else
+    #if defined(EMSCRIPTEN) || defined(__ANDROID__)
     if (!checkHighScore()) {
         sounds.play(kMusicSound);
     }
+    #else
+    checkHighScore();
+    sounds.play(kMusicSound);
     #endif
     cursor.show();
     if (callback_) {
@@ -527,9 +624,9 @@ void GL::Game::conclude()
 bool GL::Game::checkHighScore()
 {
     cursor.show();
-    if (score_ > thePrefs.highScores[9].score) {
+    if (score > thePrefs.highScores[9].score) {
         int i = 8;
-        while ((score_ > thePrefs.highScores[i].score) && (i >= 0)) {
+        while ((score > thePrefs.highScores[i].score) && (i >= 0)) {
             thePrefs.highScores[i + 1].score = thePrefs.highScores[i].score;
             thePrefs.highScores[i + 1].level = thePrefs.highScores[i].level;
             snprintf(thePrefs.highScores[i + 1].name, sizeof(thePrefs.highScores[i].name), "%s", thePrefs.highScores[i].name);
@@ -537,14 +634,14 @@ bool GL::Game::checkHighScore()
         }
         
         i++;
-        thePrefs.highScores[i].score = score_;
+        thePrefs.highScores[i].score = score;
         thePrefs.highScores[i].level = levelOn + 1;
         
         if (highScoreCallback_) {
             highScoreCallback_(thePrefs.highName, i + 1, callbackContext_);
         }
     }
-    return score_ > thePrefs.highScores[9].score;
+    return score > thePrefs.highScores[9].score;
 }
 
 void GL::Game::processHighScoreName(const char *name, int place)
@@ -573,7 +670,7 @@ void GL::Game::showHelp()
 
 void GL::Game::showHighScores()
 {
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(__ANDROID__)
     if (!prefLoaded) {
         readInPrefs();
         prefLoaded = true;
@@ -821,17 +918,17 @@ void GL::Game::handlePlayerWalking()
 				thePlayer.hVel += 80;
 				if (thePlayer.hVel > desiredHVel) {
 					thePlayer.hVel = desiredHVel;
-                    sounds.play(kWalkSound);
+                    sounds.play(kWalkSound, thePlayer.dest.left + 24);
 				} else {
-                    sounds.play(kScreechSound);
+                    sounds.play(kScreechSound, thePlayer.dest.left + 24);
                 }
 			} else {
 				thePlayer.hVel -= 80;
 				if (thePlayer.hVel < desiredHVel) {
 					thePlayer.hVel = desiredHVel;
-                    sounds.play(kWalkSound);
+                    sounds.play(kWalkSound, thePlayer.dest.left + 24);
 				} else {
-                    sounds.play(kScreechSound);
+                    sounds.play(kScreechSound, thePlayer.dest.left + 24);
                 }
 			}
 		}
@@ -840,7 +937,7 @@ void GL::Game::handlePlayerWalking()
 		if ((thePlayer.hVel < 4) && (thePlayer.hVel > -4)) {
 			thePlayer.hVel = 0;
 		} else {
-            sounds.play(kScreechSound);
+            sounds.play(kScreechSound, thePlayer.dest.left + 24);
         }
 	}
 	
@@ -993,7 +1090,7 @@ void GL::Game::checkTouchDownCollision()
 				thePlayer.dest.bottom -= offset;
 				thePlayer.dest.top -= offset;
 				thePlayer.v = thePlayer.dest.top << 4;
-                sounds.play(kGrateSound);
+                sounds.play(kGrateSound, thePlayer.dest.left + 24);
 			}
 			sected = true;
 		}
@@ -1077,9 +1174,9 @@ void GL::Game::checkLavaRoofCollision()
 	if (thePlayer.dest.bottom> kLavaHeight)
 	{
 		if (thePlayer.mode == kFalling) {
-			sounds.play(kSplashSound);
+			sounds.play(kSplashSound, thePlayer.dest.left + 24);
 		} else {
-            sounds.play(kBirdSound);
+            sounds.play(kBirdSound, thePlayer.dest.left + 24);
         }
 		thePlayer.mode = kSinking;
 	}
@@ -1089,7 +1186,7 @@ void GL::Game::checkLavaRoofCollision()
 		thePlayer.dest.top += offset;
 		thePlayer.dest.bottom += offset;
 		thePlayer.v = thePlayer.dest.top * 16;
-        sounds.play(kGrateSound);
+        sounds.play(kGrateSound, thePlayer.dest.left + 24);
 		thePlayer.vVel = thePlayer.vVel / -2;
 	}
 }
@@ -1158,7 +1255,7 @@ void GL::Game::checkPlatformCollision()
 					else
 						thePlayer.hVel = thePlayer.hVel >> 1;
 				}
-                sounds.play(kGrateSound);
+                sounds.play(kGrateSound, thePlayer.dest.left + 24);
 			}
 			else
 			{
@@ -1176,19 +1273,25 @@ void GL::Game::checkPlatformCollision()
 						thePlayer.dest.bottom -= offset;
 						thePlayer.v = thePlayer.dest.top << 4;
 						if (thePlayer.vVel > kDontFlapVel) {
-                            sounds.play(kGrateSound);
+                            sounds.play(kGrateSound, thePlayer.dest.left + 24);
                         }
 						if (thePlayer.mode == kFalling)
 						{
-							if ((thePlayer.dest.right - 16) > platformRects[i].right)							{
+							if ((thePlayer.dest.right - 12) > platformRects[i].right)
+                            {
+                                // on some systems you can't hear the grate - but now I'm hearing it clearly I'm disabling this code
+                                // if (abs(thePlayer.vVel) > 64) sounds.play(kBoom1Sound, thePlayer.dest.left + 24);
+                                sounds.play(kGrateSound, thePlayer.dest.left + 24);
 								thePlayer.hVel = 16;
 								if (thePlayer.vVel > 0)
 									thePlayer.vVel = -(thePlayer.vVel >> 1);
 								else
 									thePlayer.vVel = thePlayer.vVel >> 1;
 							}
-							else if ((thePlayer.dest.left + 16) < platformRects[i].left)
+							else if ((thePlayer.dest.left + 12) < platformRects[i].left)
 							{
+                                // if (abs(thePlayer.vVel) > 64) sounds.play(kBoom1Sound, thePlayer.dest.left + 24);
+                                sounds.play(kGrateSound, thePlayer.dest.left + 24);
 								thePlayer.hVel = -16;
 								if (thePlayer.vVel > 0)
 									thePlayer.vVel = -(thePlayer.vVel >> 1);
@@ -1197,7 +1300,7 @@ void GL::Game::checkPlatformCollision()
 							}
 							else
 							{
-								sounds.play(kBoom1Sound);
+								sounds.play(kBoom1Sound, thePlayer.dest.left + 24);
 								thePlayer.vVel = 0;
 								thePlayer.mode = kBones;
 								thePlayer.frame = 22;
@@ -1220,7 +1323,7 @@ void GL::Game::checkPlatformCollision()
 						thePlayer.dest.top += offset;
 						thePlayer.dest.bottom += offset;
 						thePlayer.v = thePlayer.dest.top << 4;
-                        sounds.play(kGrateSound);
+                        sounds.play(kGrateSound, thePlayer.dest.left + 24);
 						if (thePlayer.vVel < 0)
 							thePlayer.vVel = -(thePlayer.vVel >> 1);
 						else
@@ -1239,7 +1342,7 @@ void GL::Game::getPlayerInput()
     
 	thePlayer.flapping = false;
 	thePlayer.walking = false;
-	
+
     if ((theKeys & KeySpacebar) || (theKeys & KeyDownArrow)) {
         if (thePlayer.mode == kIdle) {
             thePlayer.mode = kWalking;
@@ -1248,7 +1351,7 @@ void GL::Game::getPlayerInput()
             if (!flapKeyDown) {
                 thePlayer.vVel -= kFlapImpulse;
                 flapKeyDown = true;
-                sounds.play(kFlapSound);
+                sounds.play(kFlapSound, thePlayer.dest.left + 24);
                 thePlayer.flapping = true;
             }
         }
@@ -1328,7 +1431,7 @@ void GL::Game::handleKeyDownEvent(Key key)
 {
     Locker locker(lock_);
     keys_ |= key;
-    
+
     if (wallState == kWallOpen && wallMode == kWallModeHelp) {
         if (key == KeyUpArrow) {
             scrollHelp(-3);
@@ -1370,9 +1473,9 @@ void GL::Game::drawLivesNumbers() const
 void GL::Game::addToScore(int value)
 {
     long oldDigit, newDigit;
-    oldDigit = score_ / 10000L;
-    score_ += value;
-    newDigit = score_ / 10000L;
+    oldDigit = score / 10000L;
+    score += value;
+    newDigit = score / 10000L;
     livesLeft += (newDigit - oldDigit);
 }
 
@@ -1380,42 +1483,42 @@ void GL::Game::drawScoreNumbers() const
 {
 	long digit;
 	
-	digit = score_ / 100000L;
+	digit = score / 100000L;
 	digit = digit % 10L;
-	if ((digit == 0) && (score_ < 1000000L)) {
+	if ((digit == 0) && (score < 1000000L)) {
 		digit = 10;
     }
     numbersImg.draw(numbersDest[2], numbersSrc[digit]);
 	
-	digit = score_ / 10000L;
+	digit = score / 10000L;
 	digit = digit % 10L;
-	if ((digit == 0) && (score_ < 100000L)) {
+	if ((digit == 0) && (score < 100000L)) {
 		digit = 10;
     }
     numbersImg.draw(numbersDest[3], numbersSrc[digit]);
 	
-	digit = score_ / 1000L;
+	digit = score / 1000L;
 	digit = digit % 10L;
-	if ((digit == 0) && (score_ < 10000L)) {
+	if ((digit == 0) && (score < 10000L)) {
 		digit = 10;
     }
     numbersImg.draw(numbersDest[4], numbersSrc[digit]);
 	
-	digit = score_ / 100L;
+	digit = score / 100L;
 	digit = digit % 10L;
-	if ((digit == 0) && (score_ < 1000L)) {
+	if ((digit == 0) && (score < 1000L)) {
 		digit = 10;
     }
     numbersImg.draw(numbersDest[5], numbersSrc[digit]);
 	
-	digit = score_ / 10L;
+	digit = score / 10L;
 	digit = digit % 10L;
-	if ((digit == 0) && (score_ < 100L)) {
+	if ((digit == 0) && (score < 100L)) {
 		digit = 10;
     }
     numbersImg.draw(numbersDest[6], numbersSrc[digit]);
 	
-	digit = score_ % 10L;
+	digit = score % 10L;
     numbersImg.draw(numbersDest[7], numbersSrc[digit]);
 }
 
@@ -1597,8 +1700,8 @@ void GL::Game::handleCountDownTimer()
 
 void GL::Game::moveEnemies()
 {
-    doEnemyFlapSound = false;
-    doEnemyScrapeSound = false;
+    doEnemyFlapSound = -1;
+    doEnemyScrapeSound = -1;
 
     for (int i = 0; i < numEnemies; i++) {
         switch (theEnemies[i].mode) {
@@ -1632,10 +1735,10 @@ void GL::Game::moveEnemies()
         theEnemies[i].wasV = theEnemies[i].v;
     }
 
-    if (doEnemyFlapSound) {
+    if (doEnemyFlapSound > -1) {
         sounds.play(kFlap2Sound);
     }
-    if (doEnemyScrapeSound) {
+    if (doEnemyScrapeSound > -1) {
         sounds.play(kScrape2Sound);
     }
     if ((deadEnemies >= numEnemiesThisLevel) && (countDownTimer == 0)) {
@@ -1951,7 +2054,7 @@ void GL::Game::checkEnemyPlatformHit(int h)
 					else
 						theEnemies[h].hVel = theEnemies[h].hVel >> 1;
 				}
-				doEnemyScrapeSound = true;
+				doEnemyScrapeSound = h;
 				theEnemies[h].facingRight = !theEnemies[h].facingRight;
 			}
 			else
@@ -1983,7 +2086,7 @@ void GL::Game::checkEnemyPlatformHit(int h)
 						theEnemies[h].v = theEnemies[h].dest.top << 4;
 						theEnemies[h].wasV = theEnemies[h].v;
 						if (theEnemies[h].vVel > kDontFlapVel) {
-							doEnemyScrapeSound = true;
+							doEnemyScrapeSound = h;
                         }
 						if (theEnemies[h].vVel > 0) {
 							theEnemies[h].vVel = -(theEnemies[h].vVel >> 1);
@@ -2018,7 +2121,7 @@ void GL::Game::checkEnemyPlatformHit(int h)
 						theEnemies[h].dest.bottom -= offset;
 						theEnemies[h].v = theEnemies[h].dest.top << 4;
 						theEnemies[h].wasV = theEnemies[h].v;
-						doEnemyScrapeSound = true;
+						doEnemyScrapeSound = h;
 						if (theEnemies[h].vVel < 0)
 							theEnemies[h].vVel = -(theEnemies[h].vVel >> 2);
 						else
@@ -2047,7 +2150,7 @@ void GL::Game::checkEnemyRoofCollision(int i)
 		theEnemies[i].dest.top += offset;
 		theEnemies[i].dest.bottom += offset;
 		theEnemies[i].v = theEnemies[i].dest.top << 4;
-		doEnemyScrapeSound = true;
+		doEnemyScrapeSound = i;
 		theEnemies[i].vVel = -(theEnemies[i].vVel >> 2);
 	}
 	else if (theEnemies[i].dest.top > kLavaHeight)
@@ -2055,7 +2158,7 @@ void GL::Game::checkEnemyRoofCollision(int i)
 		theEnemies[i].mode = kDeadAndGone;
 		deadEnemies++;
 		
-		sounds.play(kSplashSound);
+		sounds.play(kSplashSound, theEnemies[i].dest.left + 24);
 		initEnemy(i, true);
 	}
 }
@@ -2072,7 +2175,7 @@ void GL::Game::handleIdleEnemies(int i)
 		theEnemies[i].vVel = 0;
 		theEnemies[i].frame = 0;
 		setEnemyAttributes(i);
-		sounds.play(kSpawnSound);
+		sounds.play(kSpawnSound, theEnemies[i].dest.left + 24);
 	}
 }
 
@@ -2123,7 +2226,7 @@ void GL::Game::handleFlyingEnemies(int i)
 	if (shouldFlap)
 	{
 		theEnemies[i].vVel -= theEnemies[i].flapImpulse;
-		doEnemyFlapSound = true;
+		doEnemyFlapSound = i;
 	}
 	
 	if (theEnemies[i].facingRight)
@@ -2402,7 +2505,7 @@ void GL::Game::handleEggEnemy(int i)
 		theEnemies[i].dest.top = theEnemies[i].dest.bottom - theEnemies[i].frame;
 		if (theEnemies[i].frame == 0) {		// a sphinx is born!
 			theEnemies[i].frame = 0;
-			sounds.play(kSpawnSound);
+			sounds.play(kSpawnSound, theEnemies[i].dest.left + 24);
 			center = (theEnemies[i].dest.left + theEnemies[i].dest.right) >> 1;
 			theEnemies[i].dest.left = center - 24;
 			theEnemies[i].dest.right = center + 24;
@@ -2433,7 +2536,7 @@ void GL::Game::resolveEnemyPlayerHit(int i)
 		
 		theEnemies[i].mode = kDeadAndGone;
         addToScore(500);
-		sounds.play(kBonusSound);
+		sounds.play(kBonusSound, theEnemies[i].dest.left + 24);
 		initEnemy(i, true);
 	}
 	else
@@ -2454,7 +2557,7 @@ void GL::Game::resolveEnemyPlayerHit(int i)
 				thePlayer.srcNum = 9;
             }
 			thePlayer.dest.bottom = thePlayer.dest.top + 37;
-			sounds.play(kBoom2Sound);
+			sounds.play(kBoom2Sound, thePlayer.dest.left + 24);
 		}
 		else if (diff > 2)	// enemy killed
 		{
@@ -2494,7 +2597,7 @@ void GL::Game::resolveEnemyPlayerHit(int i)
                     addToScore(1500);
                     break;
 			}
-			sounds.play(kBoom2Sound);
+			sounds.play(kBoom2Sound, theEnemies[i].dest.left + 24);
 		}
 		else		// neither player nor enemy killed
 		{
@@ -2502,7 +2605,7 @@ void GL::Game::resolveEnemyPlayerHit(int i)
 				theEnemies[i].facingRight = true;
 			else
 				theEnemies[i].facingRight = false;
-            sounds.play(kScreechSound);
+            sounds.play(kScreechSound, theEnemies[i].dest.left + 24);
 		}
 		
 		wasVel = thePlayer.hVel;
@@ -2663,13 +2766,13 @@ void GL::Game::handleEye()
                     thePlayer.srcNum = 9;
                 }
                 thePlayer.dest.bottom = thePlayer.dest.top + 37;
-                sounds.play(kBoom2Sound);
+                sounds.play(kBoom2Sound, thePlayer.dest.left + 24);
             } else { // wow, player killed the eye
                 if (lightningCount == 0) {
                     doLightning(Point(theEye.dest.left + 24, theEye.dest.top + 16), 15);
                 }
                 addToScore(2000);
-                sounds.play(kBonusSound);
+                sounds.play(kBonusSound, thePlayer.dest.left + 24);
                 
                 killOffEye();
             }
@@ -2775,6 +2878,18 @@ void GL::Game::scrollHelp(int scrollDown)
     } else if (helpSrc.top < 0) {
         helpSrc.top = 0;
         helpSrc.bottom = helpSrc.top + 199;
+    }
+}
+
+void GL::Game::scrollHelpOrClose()
+{
+    if (wallState == kWallOpen) {
+        if (helpSrc.top < 199) {
+            scrollHelp(199);
+        }
+        else {
+            hideAll(true);
+        }
     }
 }
 
@@ -2921,9 +3036,9 @@ void GL::Game::drawAbout(Renderer *r) const
 
     y += lineHeight * 2;
     
-    font11.drawText("Original developer:", x, y, font11Img);
+    font11.drawText("Creator", x, y, font11Img);
     y += lineHeight;
-    font11.drawText("John Calhoun of", x, y, font11Img);
+    font11.drawText("John Calhoun", x, y, font11Img);
     y += lineHeight;
     font11.drawText("Soft Dorothy Software", x, y, font11Img);
     y += lineHeight;
@@ -2931,7 +3046,7 @@ void GL::Game::drawAbout(Renderer *r) const
 
     y += lineHeight * 2;
     
-    font11.drawText("Mac OS X and web port:", x, y, font11Img);
+    font11.drawText("macOS / Android / web", x, y, font11Img);
     y += lineHeight;
     font11.drawText("Mark Pazolli", x, y, font11Img);
     y += lineHeight;
@@ -2939,7 +3054,7 @@ void GL::Game::drawAbout(Renderer *r) const
 
     y += lineHeight * 2;
     
-    font11.drawText("Modern port:", x, y, font11Img);
+    font11.drawText("OpenGL", x, y, font11Img);
     y += lineHeight;
     font11.drawText("Kevin Wojniak", x, y, font11Img);
     y += lineHeight;
@@ -2951,16 +3066,22 @@ void GL::Game::showKeyboardWarn()
     showWarn = true;
 }
 
-void GL::Game::drawMenu(Renderer *r) const
+void GL::Game::drawBanner(Renderer *r) const
 {
     if (!playing) {
         r->setFillColor(0.56f, 0.36f, 0.0f);
-        #ifdef EMSCRIPTEN
-        #ifdef MOBILE
+        #if defined(__ANDROID__)
+        if (audioIsMuted) {
+            font11.drawText("    Sound Off      ", 500, 3, font11Img);
+        }
+        else {
+            font11.drawText("    Sound On      ", 500, 3, font11Img);
+        }
+        #elif defined(MOBILE)
         font11.drawText("     About     ", 45, 3, font11Img);
         font11.drawText("    New Game   ", 195, 3, font11Img);
         font11.drawText(" High Scores   ", 345, 3, font11Img);
-        #else
+        #elif defined(EMSCRIPTEN)
         if (controller) {
             font11.drawText("   About (A)   ", 20, 3, font11Img);
             font11.drawText("  New Game (X) ", 120, 3, font11Img);
@@ -2973,8 +3094,6 @@ void GL::Game::drawMenu(Renderer *r) const
             font11.drawText("    Help (H)   ", 220, 3, font11Img);
             font11.drawText("High Scores (S)", 320, 3, font11Img);
         }
-        #endif
-        #ifndef MOBILE
         if (audioIsMuted) {
             if (controller) {
                 font11.drawText("Play Sound (View)", 430, 3, font11Img);
@@ -2991,7 +3110,6 @@ void GL::Game::drawMenu(Renderer *r) const
                 font11.drawText(" Mute Sound (M)", 430, 3, font11Img);
             }
         }
-        #endif
         if (showWarn) {
             r->setFillColor(56/255.0f, 4/255.0f, 56/255.0f);
             r->fillRect(warnFrame);
@@ -3001,10 +3119,19 @@ void GL::Game::drawMenu(Renderer *r) const
             font11.drawText("Press N to play", 124, 22, font11Img);
         }
         #endif
-    }
+        }
     else if (pausing) {
         r->setFillColor(0.56f, 0.36f, 0.0f);
-        #ifdef MOBILE
+        #if defined(__ANDROID__)
+        font11.drawText("   Quit to Menu     ", 28, 3, font11Img);
+        font11.drawText("*** PAUSED ***", 280, 3, font11Img);
+        if (audioIsMuted) {
+            font11.drawText("    Sound Off      ", 500, 3, font11Img);
+        }
+        else {
+            font11.drawText("    Sound On      ", 500, 3, font11Img);
+        }
+        #elif defined(MOBILE)
         font11.drawText("   Quit to Menu     ", 20, 3, font11Img);
         font11.drawText("*** PAUSED ***", 320, 3, font11Img);
         #elif EMSCRIPTEN
@@ -3040,49 +3167,63 @@ void GL::Game::drawMenu(Renderer *r) const
 
     }
     else {
-        #ifdef MOBILE
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glBegin(GL_TRIANGLES);
-        glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyLeftArrow ? 0.6f : 0.4f);
-        glVertex2f(70.0f, 215.0f);
-        glVertex2f(70.0f, 265.0f);
-        glVertex2f(40.0f, 240.0f);
-        glEnd();
-        glBegin(GL_QUADS);
-        glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyLeftArrow ? 0.6f : 0.4f);
-        glVertex2f(105.0f, 230.0f);
-        glVertex2f(70.0f, 230.0f);
-        glVertex2f(70.0f, 250.0f);
-        glVertex2f(105.0f, 250.0f);
-        glEnd();
-        glBegin(GL_TRIANGLES);
-        glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyRightArrow ? 0.6f : 0.4f);
-        glVertex2f(70.0f, 320.0f);
-        glVertex2f(70.0f, 370.0f);
-        glVertex2f(105.0f, 345.0f);
-        glEnd();
-        glBegin(GL_QUADS);
-        glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyRightArrow ? 0.6f : 0.4f);
-        glVertex2f(40.0f, 335.0f);
-        glVertex2f(70.0f, 335.0f);
-        glVertex2f(70.0f, 355.0f);
-        glVertex2f(40.0f, 355.0f);
-        glEnd();
-        glBegin(GL_TRIANGLES);
-        glColor4f(0.5f, 0.5f, 0.5f, thePlayer.flapping ? 0.6f : 0.4f);
-        glVertex2f(560.0f, 355.0f);
-        glVertex2f(585.0f, 320.0f);
-        glVertex2f(610.0f, 355.0f);
-        glEnd();
-        glBegin(GL_QUADS);
-        glColor4f(0.5f, 0.5f, 0.5f, thePlayer.flapping ? 0.6f : 0.4f);
-        glVertex2f(575.0f, 355.0f);
-        glVertex2f(595.0f, 355.0f);
-        glVertex2f(595.0f, 385.0f);
-        glVertex2f(575.0f, 385.0f);
-        glEnd();
-        glDisable(GL_BLEND);
-        #endif
+        if (gTouchEnabled) {
+            float scale = 1.0f;
+            float offset = 1.0f;
+            float lowerop = 0.4f;
+            float upperop = 0.6f;
+#ifdef __ANDROID__
+            r->beginOutside();
+            scale = (float)r->bounds().height() / (float)GL_GAME_HEIGHT;
+            offset = (float)r->bounds().width() - (float)GL_GAME_WIDTH * scale;
+            upperop = 0.95f;
+            lowerop = 0.8f;
+#endif
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glBegin(GL_TRIANGLES);
+            glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyLeftArrow ? upperop : lowerop);
+            glVertex2f(70.0f * scale, 215.0f * scale);
+            glVertex2f(70.0f * scale, 265.0f * scale);
+            glVertex2f(40.0f * scale, 240.0f * scale);
+            glEnd();
+            glBegin(GL_QUADS);
+            glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyLeftArrow ? upperop : lowerop);
+            glVertex2f(105.0f * scale, 230.0f * scale);
+            glVertex2f(70.0f * scale, 230.0f * scale);
+            glVertex2f(70.0f * scale, 250.0f * scale);
+            glVertex2f(105.0f * scale, 250.0f * scale);
+            glEnd();
+            glBegin(GL_TRIANGLES);
+            glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyRightArrow ? upperop : lowerop);
+            glVertex2f(70.0f * scale, 320.0f * scale);
+            glVertex2f(70.0f * scale, 370.0f * scale);
+            glVertex2f(105.0f * scale, 345.0f * scale);
+            glEnd();
+            glBegin(GL_QUADS);
+            glColor4f(0.5f, 0.5f, 0.5f, keys_ & KeyRightArrow ? upperop : lowerop);
+            glVertex2f(40.0f * scale, 335.0f * scale);
+            glVertex2f(70.0f * scale, 335.0f * scale);
+            glVertex2f(70.0f * scale, 355.0f * scale);
+            glVertex2f(40.0f * scale, 355.0f * scale);
+            glEnd();
+            glBegin(GL_TRIANGLES);
+            glColor4f(0.5f, 0.5f, 0.5f, thePlayer.flapping ? upperop : lowerop);
+            glVertex2f(560.0f * scale + offset, 355.0f * scale);
+            glVertex2f(585.0f * scale + offset, 320.0f * scale);
+            glVertex2f(610.0f * scale + offset, 355.0f * scale);
+            glEnd();
+            glBegin(GL_QUADS);
+            glColor4f(0.5f, 0.5f, 0.5f, thePlayer.flapping ? upperop : lowerop);
+            glVertex2f(575.0f * scale + offset, 355.0f * scale);
+            glVertex2f(595.0f * scale + offset, 355.0f * scale);
+            glVertex2f(595.0f * scale + offset, 385.0f * scale);
+            glVertex2f(575.0f * scale + offset, 385.0f * scale);
+            glEnd();
+            glDisable(GL_BLEND);
+#ifdef __ANDROID__
+            r->endOutside();
+#endif
+        }
     }
 }

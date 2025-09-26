@@ -503,7 +503,7 @@ int main(int argc, char *argv[]) {
     initialize_gl4es();
     
     gl_context = SDL_GL_CreateContext(window);
-    game = new GL::Game(NULL, saveScore, NULL);
+    game = new GL::Game(NULL, saveScore, NULL, NULL);
     game->renderer()->resize(w, h);
 
     emscripten_set_main_loop(update, 60, 1);

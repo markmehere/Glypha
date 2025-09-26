@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 
 set(EXE_NAME "Glypha III")
 string(REPLACE " " "" EXE_NAME_NOSPACES "${EXE_NAME}")
@@ -13,12 +13,14 @@ endif()
 project(Glypha)
 
 set(CPACK_PACKAGE_VERSION_MAJOR "2")
-set(CPACK_PACKAGE_VERSION_MINOR "0")
-set(CPACK_PACKAGE_VERSION_PATCH "4")
+set(CPACK_PACKAGE_VERSION_MINOR "2")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
 
 set(SOURCES
   game/GLGame.cpp
   game/GLGame.h
+  game/GLMenu.cpp
+  game/GLMenu.h
   game/GLImage.cpp
   game/GLImage.h
   game/GLRect.cpp
@@ -198,7 +200,12 @@ add_executable(bin-convert bin-convert.c)
 
 add_dependencies(${PROJECT_NAME} bin-convert)
 
+set(UNUSEDRESOURCES
+  resources/images/help_android.png
+)
+
 set(RESOURCES
+  resources/images/birdback.png
   resources/images/help.png
   resources/images/eye.png
   resources/images/egg.png
@@ -243,6 +250,18 @@ foreach(rsrc ${RESOURCES})
   set_source_files_properties(${PROJECT_NAME} ${output_path}
     PROPERTIES GENERATED TRUE
   )
+  add_custom_command(OUTPUT ${output_path}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${output_dir}
+    COMMAND $<TARGET_FILE:bin-convert> ${input_path} ${output_path}
+  )
+endforeach()
+
+foreach(rsrc ${UNUSEDRESOURCES})
+  get_filename_component(rsrc_filename ${rsrc} NAME)
+  string(REPLACE "." "_" rsrc_filename ${rsrc_filename})
+  set(input_path ${CMAKE_CURRENT_LIST_DIR}/${rsrc})
+  set(output_dir ${CMAKE_CURRENT_BINARY_DIR}/resources)
+  set(output_path ${output_dir}/${rsrc_filename}.cpp)
   add_custom_command(OUTPUT ${output_path}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${output_dir}
     COMMAND $<TARGET_FILE:bin-convert> ${input_path} ${output_path}

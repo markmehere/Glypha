@@ -9,14 +9,25 @@ GL::Image::Image()
 {
 }
 
+GL::Image::~Image() {
+    glDeleteTextures(1, &texture_);
+}
+
 bool GL::Image::isLoaded() const
 {
     return texture_ != 0;
 }
 
+void GL::Image::unload() {
+    glDeleteTextures(1, &texture_);
+    texture_ = 0;
+    width_ = 0;
+    height_ = 0;
+}
+
 void GL::Image::loadTextureData_(const void *texData, bool hasAlpha)
 {
-    #ifdef EMSCRIPTEN
+    #if defined(EMSCRIPTEN) || defined(__ANDROID__)
     loadTextureData_(texData, hasAlpha ? GL_RGBA : GL_RGB, hasAlpha);
     #else
     loadTextureData_(texData, hasAlpha ? GL_BGRA_EXT : GL_BGR_EXT, hasAlpha);
@@ -37,6 +48,40 @@ void GL::Image::loadTextureData_(const void *texData, GLenum format, bool hasAlp
 	
 	// set texture data
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, format, GL_UNSIGNED_BYTE, texData);
+}
+
+void GL::Image::drawBacking(const GL::Rect& destRect, float zoom) const
+{
+    if (!isLoaded() || zoom <= 0.0f) return;
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture_);
+
+    if (alpha_) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, colorBlending_ ? GL_BLEND : GL_REPLACE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    float texWidth = width_ * zoom;
+    float texHeight = height_ * zoom;
+
+    float uRepeat = (destRect.right - destRect.left) / texWidth;
+    float vRepeat = (destRect.bottom - destRect.top) / texHeight;
+
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f); glVertex2i(destRect.left,  destRect.top);
+        glTexCoord2f(0.0f, vRepeat); glVertex2i(destRect.left,  destRect.bottom);
+        glTexCoord2f(uRepeat, vRepeat); glVertex2i(destRect.right, destRect.bottom);
+        glTexCoord2f(uRepeat, 0.0f); glVertex2i(destRect.right, destRect.top);
+    glEnd();
+
+    if (alpha_) {
+        glDisable(GL_BLEND);
+    }
+    glDisable(GL_TEXTURE_2D);
 }
 
 void GL::Image::draw(const GL::Point *dest, size_t numDest, const GL::Point *src, size_t numSrc) const

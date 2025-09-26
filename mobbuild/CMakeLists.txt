@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 
 set(EXE_NAME "Glypha Mobile")
 string(TOLOWER "${EXE_NAME}" EXE_LOWER)

@@ -39,7 +39,7 @@ void GL::Sounds::initContext()
     context = new Context;
 }
 
-void GL::Sounds::play(int which) {
+void GL::Sounds::play(int which, int where) {
     Context *ctx = static_cast<Context*>(context);
     bool didPlay = false;
     const GL::WaveData& data = ctx->wavs[which];

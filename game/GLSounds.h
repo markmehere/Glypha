@@ -65,7 +65,7 @@ public:
     
     void initContext();
     void load(int which, const unsigned char *buf, unsigned bufLen);
-    void play(int which);
+    void play(int which, int where = 320);
     
 private:
     void *context;
